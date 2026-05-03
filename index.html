@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ELEVORE OMEGA | v88.0</title>
+    <title>ELEVORE EMPIRE | v92.0 Signature</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -12,571 +12,1043 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&display=swap');
+        * { -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Outfit', sans-serif; background: #000; color: #f8fafc; min-height: 100vh; overflow-x: hidden; }
-        .galactic-card { background: rgba(15,15,20,0.95); backdrop-filter: blur(40px); border: 1px solid rgba(255,255,255,0.08); border-radius: 2.5rem; transition: 0.4s; }
-        .input-lumina { background: #0d1117 !important; border: 2px solid #30363d; border-radius: 1.25rem; padding: 1.2rem; color: #fff !important; font-weight: 800 !important; width: 100%; outline: none; font-size: 1rem; }
-        .input-lumina:focus { border-color: #22c55e; box-shadow: 0 0 30px rgba(34,197,94,0.2); }
-        .tab-active { background: #fbbf24 !important; color: #000 !important; font-weight: 900; box-shadow: 0 10px 20px rgba(251,191,36,0.2); }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .titan-glass { background: rgba(15,15,20,0.97); backdrop-filter: blur(40px); border: 1px solid rgba(255,255,255,0.08); border-radius: 2.5rem; transition: 0.4s; }
+        .titan-card  { background: rgba(15,15,20,0.97); backdrop-filter: blur(40px); border: 1px solid rgba(255,255,255,0.08); border-radius: 2.5rem; }
+        .input-ceo   { background: #0d1117!important; border:1px solid #30363d; border-radius:1.25rem; padding:1.1rem; color:#fff!important; font-weight:700; width:100%; outline:none; transition:0.3s; font-size:1rem; }
+        .input-ceo:focus { border-color:#fbbf24; box-shadow:0 0 30px rgba(251,191,36,0.15); }
+        .tab-active  { background:#fbbf24!important; color:#000!important; font-weight:900; box-shadow:0 0 25px rgba(251,191,36,0.25); }
+        .no-scrollbar::-webkit-scrollbar { display:none; }
         @keyframes pulse-gold { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
-        .gold-pulse { width:10px;height:10px;background:#fbbf24;border-radius:50%;animation:pulse-gold 2s infinite;box-shadow:0 0 15px #fbbf24; }
-        @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
-        .kpi-glow { box-shadow: 0 0 40px rgba(34,197,94,0.15); }
-        .progress-bar { height:6px;background:#1a1a1a;border-radius:10px;overflow:hidden; }
-        .progress-fill { height:100%;background:linear-gradient(90deg,#22c55e,#fbbf24);transition:width 1s ease; }
+        .gold-pulse  { width:10px;height:10px;background:#fbbf24;border-radius:50%;animation:pulse-gold 2s infinite;box-shadow:0 0 15px #fbbf24; }
+        .progress-bar  { height:8px;background:#1a1a1a;border-radius:10px;overflow:hidden; }
+        .progress-fill { height:100%;background:linear-gradient(90deg,#22c55e,#fbbf24);box-shadow:0 0 12px rgba(34,197,94,0.4);transition:width 1.5s cubic-bezier(.19,1,.22,1); }
+        @keyframes toast-in { from{transform:translateY(-20px);opacity:0;} to{transform:translateY(0);opacity:1;} }
+        .toast { animation:toast-in 0.3s ease; }
+        .dna-ring { width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-style:italic; }
+        @keyframes shine { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+        .gold-button { background:linear-gradient(90deg,#fbbf24,#f59e0b,#fbbf24);background-size:200%;animation:shine 3s infinite;color:#000;font-weight:900; }
+        .vip-badge { background:linear-gradient(90deg,#fbbf24,#f59e0b,#fbbf24);background-size:200%;animation:shine 2s infinite;color:#000;font-weight:900; }
+        .signature-pad { border:2px dashed #30363d;border-radius:1.5rem;background:#0d1117;cursor:crosshair;touch-action:none;display:block; }
     </style>
 </head>
 <body>
-    <div id="root"></div>
-    <script type="text/babel">
-        const { useState, useMemo, useEffect, useCallback, useRef } = React;
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo, useEffect, useCallback, useRef } = React;
 
-        const SUPABASE_URL = 'https://ceijlgurveaalvjmptns.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNlaWpsZ3VydmVhYWx2am1wdG5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4MTYwMzEsImV4cCI6MjA5MjM5MjAzMX0.XaPMpXxwMKRM09YN9kroF-gnISM2gBn29wi2R2UdOIc';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const SUPABASE_URL = 'https://ceijlgurveaalvjmptns.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNlaWpsZ3VydmVhYWx2am1wdG5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4MTYwMzEsImV4cCI6MjA5MjM5MjAzMX0.XaPMpXxwMKRM09YN9kroF-gnISM2gBn29wi2R2UdOIc';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        const STAFF_PAY_RATE = 0.40;
+const STAFF_PAY   = 0.40;
+const MONTHLY_GOAL = 15000;
+const GOOGLE_LINK  = "https://g.page/r/TU_LINK_AQUI/review";
 
-        const INITIAL_STATE = {
-            name:"", phone:"", address:"", svc:'regular',
-            beds:2, baths:2, living:1, laundryRoom:0, complexity:1,
-            sqft:2000, oven:false, fridge:false, windows:false, pethair:false, garage:false,
-            laundryLoads:0, expenses:0, deposit:0, discount:0,
-            frequency:'one-time', team:"", date:"", status:'scheduled',
-            totalPrice:0, handymanHours:4, materialCost:0, laborType:'light',
-            notes:""
+const ADDONS = [
+    {id:'oven',label:'Oven',p:35},{id:'fridge',label:'Fridge',p:30},
+    {id:'windows',label:'Windows',p:50},{id:'pethair',label:'Pet Hair',p:25},{id:'garage',label:'Garage',p:40}
+];
+const QUICK_JOBS = [
+    {id:'tv',label:'Mount TV',p:150},{id:'door',label:'Install Door',p:200},
+    {id:'patch',label:'Drywall Patch',p:180},{id:'shelves',label:'Shelving',p:100},{id:'lock',label:'Lock Change',p:85}
+];
+const RISK_PRESETS = [{label:'None',v:0},{label:'Low',v:50},{label:'Mid',v:100},{label:'High',v:150}];
+const CHECKLIST_ITEMS = ['Entrance & hallway','Kitchen counters & sink','Bathrooms scrubbed','Floors mopped','Bedrooms dusted','Windows wiped','Trash removed','Final walkthrough'];
+
+const INITIAL_STATE = {
+    name:"",phone:"",address:"",svc:'regular',
+    beds:2,baths:2,living:1,laundryRoom:0,complexity:1,
+    sqft:2000,oven:false,fridge:false,windows:false,pethair:false,garage:false,
+    laundryLoads:0,expenses:0,deposit:0,discount:0,
+    frequency:'one-time',team:"",date:"",status:'scheduled',totalPrice:0,
+    laborHours:2,materialCost:0,riskMargin:50,selectedQuickJobs:[],
+    audit_link:"",notes:""
+};
+
+function calcDNA(cJobs) {
+    if(!cJobs.length) return 0;
+    let s=0;
+    s+=Math.min(40,cJobs.length*10);
+    s+=Math.min(30,cJobs.filter(j=>j.status==='paid').length*10);
+    s+=Math.min(20,cJobs.filter(j=>j.specs?.frequency!=='one-time').length*10);
+    s+=cJobs.some(j=>j.specs?.referral)?10:0;
+    return Math.min(100,s);
+}
+
+function DNABadge({score}) {
+    const color=score>=80?'#fbbf24':score>=50?'#22c55e':score>=25?'#3b82f6':'#6b7280';
+    const label=score>=80?'VIP':score>=50?'PRO':score>=25?'ACTIVE':'NEW';
+    return <div className="dna-ring border-2 flex-shrink-0" style={{borderColor:color,color}}><div className="text-center leading-none"><div style={{fontSize:'0.6rem',fontWeight:900}}>{label}</div><div style={{fontSize:'0.75rem'}}>{score}</div></div></div>;
+}
+
+// ── SIGNATURE CANVAS COMPONENT ──
+function SignaturePad({onSave, label="Sign to approve"}) {
+    const ref = useRef(null);
+    const [drawing, setDrawing] = useState(false);
+    const [hasStrokes, setHasStrokes] = useState(false);
+
+    const getXY = (e) => {
+        const r = ref.current.getBoundingClientRect();
+        const src = e.touches ? e.touches[0] : e;
+        return [src.clientX - r.left, src.clientY - r.top];
+    };
+
+    const start = (e) => {
+        e.preventDefault();
+        const [x,y] = getXY(e);
+        const ctx = ref.current.getContext('2d');
+        ctx.beginPath(); ctx.moveTo(x,y);
+        setDrawing(true);
+    };
+
+    const move = (e) => {
+        if(!drawing) return;
+        e.preventDefault();
+        const [x,y] = getXY(e);
+        const ctx = ref.current.getContext('2d');
+        ctx.lineTo(x,y);
+        ctx.strokeStyle='#22c55e'; ctx.lineWidth=3; ctx.lineCap='round';
+        ctx.stroke();
+        setHasStrokes(true);
+    };
+
+    const clear = () => {
+        const ctx = ref.current.getContext('2d');
+        ctx.clearRect(0,0,ref.current.width,ref.current.height);
+        setHasStrokes(false);
+    };
+
+    const save = () => {
+        if(!hasStrokes) return;
+        onSave(ref.current.toDataURL());
+    };
+
+    return (
+        <div className="space-y-3">
+            <p className="text-[10px] font-black text-amber-500 uppercase text-center tracking-widest">{label}</p>
+            <canvas ref={ref} width={320} height={140} className="signature-pad w-full"
+                onMouseDown={start} onTouchStart={start}
+                onMouseMove={move} onTouchMove={move}
+                onMouseUp={()=>setDrawing(false)} onTouchEnd={()=>setDrawing(false)} />
+            <div className="flex gap-2">
+                <button onClick={clear} className="flex-1 py-3 bg-white/5 text-slate-400 rounded-2xl font-black uppercase text-[10px] border border-white/5">Clear</button>
+                <button onClick={save} disabled={!hasStrokes} className={`flex-1 py-3 rounded-2xl font-black uppercase text-[10px] transition-all ${hasStrokes?'gold-button active:scale-95':'bg-white/5 text-slate-600'}`}>
+                    {hasStrokes ? '✅ Confirm Signature' : 'Sign above first'}
+                </button>
+            </div>
+        </div>
+    );
+}
+
+// ── PHOTO DRIVE COMPONENT ──
+function PhotoDrive({photos=[], label, onAdd}) {
+    const [newLink, setNewLink] = useState("");
+    return (
+        <div className="space-y-3">
+            <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{label}</p>
+            {photos.length===0 && <p className="text-[10px] text-slate-600 italic font-black text-center py-4">No photos yet</p>}
+            <div className="grid grid-cols-2 gap-2">
+                {photos.map((url,i)=>(
+                    <a key={i} href={url} target="_blank" className="bg-white/5 rounded-2xl p-3 text-center border border-white/5 hover:border-green-500 transition-all">
+                        <i data-lucide="image" className="w-6 h-6 mx-auto text-green-400 mb-1"></i>
+                        <p className="text-[8px] text-slate-400 font-black uppercase truncate">Photo {i+1}</p>
+                    </a>
+                ))}
+            </div>
+            {onAdd && (
+                <div className="flex gap-2">
+                    <input type="text" placeholder="Paste photo link..." value={newLink} onChange={e=>setNewLink(e.target.value)}
+                        className="input-ceo text-xs text-blue-400 flex-1" />
+                    <button onClick={()=>{ if(newLink.trim()){onAdd(newLink.trim());setNewLink("");} }}
+                        className="px-4 bg-green-600 text-white rounded-2xl font-black text-sm active:scale-95 transition-all">+</button>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ══════════════════════════════════════════════════
+function App() {
+    const urlParams   = new URLSearchParams(window.location.search);
+    const clientJobId = urlParams.get('mision');
+    const refCode     = urlParams.get('ref');
+
+    const [view,        setView]        = useState(clientJobId?'portal':'auth');
+    const [role,        setRole]        = useState('admin');
+    const [pass,        setPass]        = useState("");
+    const [jobs,        setJobs]        = useState([]);
+    const [clients,     setClients]     = useState([]);
+    const [loading,     setLoading]     = useState(false);
+    const [isPrivate,   setIsPrivate]   = useState(false);
+    const [editId,      setEditId]      = useState(null);
+    const [deployTab,   setDeployTab]   = useState('identity');
+    const [filterStatus,setFilterStatus]= useState('all');
+    const [searchQ,     setSearchQ]     = useState('');
+    const [toast,       setToast]       = useState(null);
+    const [activeStaff, setActiveStaff] = useState(null);
+    const [state,       setState]       = useState(INITIAL_STATE);
+
+    const showToast = (msg,color='green') => { setToast({msg,color}); setTimeout(()=>setToast(null),3500); };
+
+    const refresh = useCallback(async()=>{
+        setLoading(true);
+        const {data:j} = await supabase.from('elevore_missions').select('*').order('created_at',{ascending:false});
+        const {data:c} = await supabase.from('clients').select('*');
+        if(j) setJobs(j);
+        if(c) setClients(c);
+        setLoading(false);
+        setTimeout(()=>lucide.createIcons(),150);
+    },[]);
+
+    useEffect(()=>{
+        if(view==='portal'&&clientJobId) loadPortal();
+        else if(view!=='auth') refresh();
+    },[view,refresh]);
+
+    async function loadPortal() {
+        setLoading(true);
+        const {data} = await supabase.from('elevore_missions').select('*').eq('id',clientJobId).single();
+        if(data) setJobs([data]);
+        setLoading(false);
+        setTimeout(()=>lucide.createIcons(),100);
+    }
+
+    const onNameChange=(val)=>{
+        setState(s=>({...s,name:val}));
+        const match=clients.find(c=>c.name.toLowerCase().includes(val.toLowerCase()));
+        if(match&&val.length>3) setState(s=>({...s,...match.specs,name:match.name,phone:match.phone,address:match.address}));
+    };
+
+    const pricingEngine = useMemo(()=>{
+        let advice="✅ COMPETITIVE",adviceColor="text-blue-400";
+        if(state.svc==='handyman'){
+            const quickTotal=state.selectedQuickJobs.reduce((a,id)=>a+(QUICK_JOBS.find(q=>q.id===id)?.p||0),0);
+            const laborTotal=state.laborHours*85;
+            let markup=1.2; if(state.materialCost<50)markup=1.4; else if(state.materialCost<200)markup=1.3;
+            const materialTotal=Math.round(state.materialCost*markup);
+            const sub=quickTotal+laborTotal+materialTotal+state.riskMargin;
+            const total=Math.round(sub*(1-(state.discount/100)));
+            if(total<125){advice="⚠️ BELOW MIN";adviceColor="text-red-500";}
+            else if(total>=500){advice="💰 PREMIUM";adviceColor="text-green-400";}
+            return {total,advice,adviceColor,laborTotal,materialTotal,quickTotal};
+        }
+        let base=0;
+        if(state.svc==='postcon'){base=(state.sqft||0)*0.35;}
+        else{
+            const bases={regular:95,deep:165,moveout:195};
+            base=(bases[state.svc]||95)+(state.beds*40)+(state.baths*35)+(state.living*25)+(state.laundryRoom*25);
+            ADDONS.forEach(a=>{if(state[a.id])base+=a.p;});
+            base+=state.laundryLoads*25;
+        }
+        const freq={'one-time':1,'weekly':0.85,'bi-weekly':0.9,'monthly':0.95}[state.frequency]||1;
+        const total=Math.round(base*state.complexity*freq*(1-(state.discount/100)));
+        if(total<120){advice="⚠️ LOW MARGIN";adviceColor="text-red-500";}
+        else if(total>=400){advice="🔥 HIGH VALUE";adviceColor="text-amber-400";}
+        return {total,advice,adviceColor,laborTotal:0,materialTotal:0,quickTotal:0};
+    },[state]);
+
+    useEffect(()=>{if(!editId)setState(s=>({...s,totalPrice:pricingEngine.total}));},[pricingEngine.total,editId]);
+
+    const deploy=async()=>{
+        if(!state.name||!state.address) return showToast("Fill Name and Address",'red');
+        setLoading(true);
+        try{
+            const {data:c,error:cErr}=await supabase.from('clients')
+                .upsert({name:state.name,phone:state.phone,address:state.address,specs:{...state}},{onConflict:'name'})
+                .select().single();
+            if(cErr||!c){showToast("Clients Error: "+(cErr?.message||"Check RLS"),'red');setLoading(false);return;}
+            const freqDays={'weekly':7,'bi-weekly':14,'monthly':30,'one-time':null}[state.frequency];
+            let nextVisit=null;
+            if(freqDays&&state.date){const d=new Date(state.date);d.setDate(d.getDate()+freqDays);nextVisit=d.toISOString().split('T')[0];}
+            const payload={
+                client_name:state.name,client_phone:state.phone,address:state.address,
+                service_type:state.svc,total_price:pricingEngine.total,deposit_paid:state.deposit,
+                team_assigned:state.team,status:state.status,specs:{...state,referral:refCode||null},
+                scheduled_date:state.date||null,notes:state.notes||null,next_visit:nextVisit
+            };
+            const {error:jErr}=editId
+                ?await supabase.from('elevore_missions').update(payload).eq('id',editId)
+                :await supabase.from('elevore_missions').insert([payload]);
+            if(jErr){showToast("Mission Error: "+jErr.message,'red');setLoading(false);return;}
+            setState(INITIAL_STATE);setEditId(null);
+            showToast(editId?"Mission updated! ⚡":"Mission deployed! 🚀");
+            setView('agenda');refresh();
+        }catch(e){showToast("Error: "+e.message,'red');}
+        setLoading(false);
+    };
+
+    const finance=useMemo(()=>{
+        const gross=jobs.reduce((a,b)=>a+(b.total_price||0),0);
+        const collected=jobs.reduce((a,b)=>a+(b.deposit_paid||0),0);
+        const exp=jobs.reduce((a,b)=>a+(b.specs?.expenses||0),0);
+        const net=Math.max(0,Math.round(collected-(collected*STAFF_PAY)-exp));
+        const pending=gross-collected;
+        const progress=Math.min(100,(gross/MONTHLY_GOAL)*100);
+        const avgTicket=jobs.length?Math.round(gross/jobs.length):0;
+        const byStatus={lead:0,scheduled:0,paid:0};
+        jobs.forEach(j=>{if(byStatus[j.status]!==undefined)byStatus[j.status]++;});
+        const byService={};
+        jobs.forEach(j=>{byService[j.service_type]=(byService[j.service_type]||0)+(j.total_price||0);});
+        const recurring=jobs.filter(j=>j.specs?.frequency&&j.specs.frequency!=='one-time').reduce((a,b)=>a+(b.total_price||0),0);
+        const today=new Date();const soon=new Date();soon.setDate(today.getDate()+7);
+        const retentionDue=jobs.filter(j=>j.next_visit&&new Date(j.next_visit)<=soon&&j.status==='paid');
+        const pendingSignatures=jobs.filter(j=>!j.approval_signature&&j.status==='lead');
+        return {gross,collected,net,pending,progress,avgTicket,byStatus,byService,recurring,retentionDue,pendingSignatures,total:jobs.length};
+    },[jobs]);
+
+    const clientDNA=useMemo(()=>{
+        const map={};
+        clients.forEach(c=>{const cj=jobs.filter(j=>j.client_name===c.name);map[c.name]={score:calcDNA(cj),jobs:cj.length};});
+        return map;
+    },[clients,jobs]);
+
+    const filteredJobs=useMemo(()=>jobs.filter(j=>{
+        const ms=filterStatus==='all'||j.status===filterStatus;
+        const q=searchQ.toLowerCase();
+        const mq=!searchQ||j.client_name?.toLowerCase().includes(q)||j.address?.toLowerCase().includes(q);
+        return ms&&mq;
+    }),[jobs,filterStatus,searchQ]);
+
+    const todayStr=new Date().toISOString().split('T')[0];
+    const staffJobs=useMemo(()=>jobs.filter(j=>j.scheduled_date===todayStr||j.status==='scheduled'),[jobs,todayStr]);
+
+    const sendWA=(job,type)=>{
+        const p=job.client_phone?.replace(/\D/g,'')||'';const phone=p.length===10?'1'+p:p;
+        const bal=job.total_price-job.deposit_paid;
+        const portal=`${window.location.origin}${window.location.pathname}?mision=${job.id}`;
+        const refLink=`${window.location.origin}${window.location.pathname}?ref=${job.client_name?.replace(/\s/g,'_')}`;
+        const msgs={
+            confirm:  `Hi ${job.client_name}! ✨ Elevore confirming your ${job.service_type?.toUpperCase()} on ${job.scheduled_date||'your scheduled date'}. Balance: $${bal}. Zelle: (407) 952-4228 🏠`,
+            reminder: `Hi ${job.client_name}! 🔔 Reminder from Elevore — your service is coming up ${job.scheduled_date||'soon'}. Balance: $${bal}. Reply with any questions!`,
+            review:   `Hi ${job.client_name}! 🌟 Thank you for choosing Elevore! A quick Google review helps us grow: ${GOOGLE_LINK} ⭐⭐⭐⭐⭐`,
+            referral: `Hi ${job.client_name}! 🎁 Love your clean space? Refer a friend and get $25 off your next service! Your link: ${refLink}`,
+            quote:    `Hi ${job.client_name}! 📋 Your Elevore quote:\n\n🏠 ${job.service_type?.toUpperCase()}\n📅 ${job.scheduled_date||'TBD'}\n💰 Total: $${job.total_price}\n💵 Deposit: $${job.deposit_paid}\n⚖️ Balance: $${bal}\n\n👉 View & sign here: ${portal}\n\nZelle: (407) 952-4228 ✅`,
+            portal:   `Hi ${job.client_name}! ✨ Track your ELEVORE mission live & sign your quote here: ${portal}`
+        };
+        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msgs[type])}`,'_blank');
+    };
+
+    const printInvoice=(job)=>{
+        const win=window.open('','_blank');
+        win.document.write(`<html><head><style>body{font-family:sans-serif;padding:50px}.h{border-bottom:5px solid #22c55e;padding-bottom:20px;display:flex;justify-content:space-between}.row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee}.total{background:#000;color:#fff;padding:40px;border-radius:20px;margin-top:30px}.sig{border:2px solid #eee;border-radius:10px;margin-top:20px;padding:10px;text-align:center}</style></head><body>
+        <div class="h"><div><h1 style="font-style:italic">ELEVORE</h1><p>Premium Property Services</p></div><div><h2>INVOICE</h2><p>${new Date().toLocaleDateString()}</p></div></div>
+        <div style="margin-top:30px"><h3>BILL TO:</h3><p><b>${job.client_name}</b></p><p>${job.address}</p><p>${job.client_phone||''}</p></div>
+        <div style="margin-top:20px"><div class="row"><span>Service</span><span>${job.service_type?.toUpperCase()}</span></div><div class="row"><span>Date</span><span>${job.scheduled_date||'TBD'}</span></div><div class="row"><span>Team</span><span>${job.team_assigned||'TBD'}</span></div><div class="row"><span>Total</span><span>$${job.total_price}</span></div><div class="row"><span>Deposit Paid</span><span>-$${job.deposit_paid}</span></div></div>
+        <div class="total"><h1>BALANCE DUE: $${job.total_price-job.deposit_paid}</h1><p>Zelle: (407) 952-4228</p></div>
+        ${job.approval_signature?`<div class="sig"><p style="font-size:10px;color:#999">CLIENT APPROVAL SIGNATURE</p><img src="${job.approval_signature}" style="max-height:80px"/></div>`:''}
+        ${job.final_signature?`<div class="sig"><p style="font-size:10px;color:#999">JOB COMPLETION SIGNATURE</p><img src="${job.final_signature}" style="max-height:80px"/></div>`:''}
+        <p style="margin-top:60px;text-align:center;color:#999">Thank you for choosing Elevore ⭐</p>
+        <script>window.print();<\/script></body></html>`);
+        win.document.close();
+    };
+
+    // ══ PORTAL VIEW ══
+    if(view==='portal'){
+        const job=jobs[0];
+        if(!job) return <div className="min-h-screen flex items-center justify-center text-white font-black">Syncing...</div>;
+        const bal=job.total_price-job.deposit_paid;
+        const statusMap={lead:10,scheduled:35,in_progress:65,completed:90,paid:100};
+
+        const saveApprovalSig=async(sigData)=>{
+            setLoading(true);
+            const {error}=await supabase.from('elevore_missions').update({approval_signature:sigData,status:'scheduled'}).eq('id',clientJobId);
+            if(!error){showToast("Quote approved! ✅");loadPortal();}
+            else showToast("Error saving signature",'red');
+            setLoading(false);
         };
 
-        function App() {
-            const [view, setView] = useState('auth');
-            const [role, setRole] = useState('admin');
-            const [pass, setPass] = useState("");
-            const [jobs, setJobs] = useState([]);
-            const [clients, setClients] = useState([]);
-            const [loading, setLoading] = useState(false);
-            const [isPrivate, setIsPrivate] = useState(false);
-            const [editId, setEditId] = useState(null);
-            const [deployTab, setDeployTab] = useState('identity');
-            const [filterStatus, setFilterStatus] = useState('all');
-            const [searchQ, setSearchQ] = useState('');
-            const [toast, setToast] = useState(null);
-            const [state, setState] = useState(INITIAL_STATE);
+        const saveFinalSig=async(sigData)=>{
+            setLoading(true);
+            const {error}=await supabase.from('elevore_missions').update({final_signature:sigData,status:'paid'}).eq('id',clientJobId);
+            if(!error){showToast("Job confirmed! 🌟");loadPortal();}
+            else showToast("Error saving signature",'red');
+            setLoading(false);
+        };
 
-            const showToast = (msg, color='green') => {
-                setToast({msg, color});
-                setTimeout(() => setToast(null), 3000);
-            };
+        return(
+            <div className="min-h-screen p-6 bg-black animate-in fade-in duration-1000">
+                {toast&&<div className={`toast fixed top-6 left-1/2 -translate-x-1/2 z-[500] px-8 py-4 rounded-2xl font-black uppercase text-sm shadow-2xl ${toast.color==='red'?'bg-red-600':'bg-green-600'} text-white`}>{toast.msg}</div>}
+                {loading&&<div className="fixed inset-0 bg-black/80 z-[300] flex items-center justify-center"><div className="w-16 h-16 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div></div>}
+                <div className="max-w-md mx-auto space-y-6 pb-20">
+                    <div className="text-center space-y-3">
+                        <div className="w-20 h-20 bg-white rounded-3xl mx-auto flex items-center justify-center font-black text-black text-3xl italic shadow-xl">E</div>
+                        <h1 className="text-2xl font-black uppercase tracking-[0.3em] text-white">ELEVORE</h1>
+                        <p className="text-[10px] text-green-500 font-bold uppercase tracking-[0.4em]">Live Mission Hub</p>
+                    </div>
 
-            const refresh = useCallback(async () => {
-                setLoading(true);
-                const { data: j } = await supabase.from('jobs').select('*, job_expenses(amount)').order('created_at', { ascending: false });
-                const { data: c } = await supabase.from('clients').select('*');
-                if (j) setJobs(j);
-                if (c) setClients(c);
-                setLoading(false);
-                setTimeout(() => lucide.createIcons(), 150);
-            }, []);
-
-            useEffect(() => { if(view !== 'auth') refresh(); }, [view, refresh]);
-
-            const onNameChange = (val) => {
-                setState(s => ({...s, name: val}));
-                const match = clients.find(c => c.name.toLowerCase().includes(val.toLowerCase()));
-                if (match && val.length > 3) {
-                    setState(s => ({...s, ...match.specs, name: match.name, phone: match.phone, address: match.address}));
-                }
-            };
-
-            // FIX #3 — Handyman aislado de complexity/frequency
-            const pricingEngine = useMemo(() => {
-                let sub = 0;
-                let advice = "COMPETITIVE RATE";
-                let adviceColor = "text-blue-400";
-
-                if (state.svc === 'handyman') {
-                    const rate = state.laborType === 'heavy' ? 85 : 65;
-                    sub = (state.handymanHours * rate) + (state.materialCost * 1.20);
-                    const total = Math.round(sub * (1 - (state.discount / 100)));
-                    if (total < 150) { advice = "⚠️ TRIP FEE RISK"; adviceColor = "text-red-500"; }
-                    else if (total > 500) { advice = "💰 PREMIUM TICKET"; adviceColor = "text-green-500"; }
-                    return { total, advice, adviceColor };
-                }
-
-                if (state.svc === 'postcon') {
-                    sub = (state.sqft || 0) * 0.35;
-                } else {
-                    const svcBases = { regular:95, deep:165, moveout:195 };
-                    sub = (svcBases[state.svc]||95) + (state.beds*40) + (state.baths*35) + (state.living*25) + (state.laundryRoom*25);
-                    if(state.oven) sub+=35; if(state.fridge) sub+=30; if(state.windows) sub+=50; if(state.pethair) sub+=25; if(state.garage) sub+=40;
-                    sub += (state.laundryLoads * 25);
-                }
-
-                const freqDisc = {'one-time':1,'weekly':0.85,'bi-weekly':0.9,'monthly':0.95}[state.frequency]||1;
-                const total = Math.round(sub * state.complexity * freqDisc * (1-(state.discount/100)));
-                if (total < 120) { advice = "⚠️ LOW MARGIN"; adviceColor = "text-red-500"; }
-                else if (total > 400) { advice = "🔥 HIGH VALUE"; adviceColor = "text-amber-400"; }
-                return { total, advice, adviceColor };
-            }, [state]);
-
-            useEffect(() => { if(!editId) setState(s => ({...s, totalPrice: pricingEngine.total})); }, [pricingEngine.total, editId]);
-
-            // FIX #1 + FIX #2 — deploy con errores manejados + client_phone
-            const deploy = async () => {
-                if(!state.name || !state.address) return alert("Fill Name and Address");
-                setLoading(true);
-                try {
-                    const { data: c, error: cErr } = await supabase
-                        .from('clients')
-                        .upsert({ name:state.name, phone:state.phone, address:state.address, specs:{...state} }, { onConflict:'name' })
-                        .select().single();
-
-                    if (cErr || !c) {
-                        showToast("Error Clients: " + (cErr?.message||"Check RLS"), 'red');
-                        setLoading(false); return;
-                    }
-
-                    const payload = {
-                        client_id: c.id, client_name: state.name, client_phone: state.phone,
-                        address: state.address, service_type: state.svc,
-                        total_price: pricingEngine.total, deposit_paid: state.deposit,
-                        team_assigned: state.team, status: state.status,
-                        specs: {...state}, scheduled_date: state.date || null,
-                        notes: state.notes || null
-                    };
-
-                    const { data: jObj, error: jErr } = editId
-                        ? await supabase.from('jobs').update(payload).eq('id', editId).select().single()
-                        : await supabase.from('jobs').insert([payload]).select().single();
-
-                    if (jErr || !jObj) {
-                        showToast("Error Jobs: " + (jErr?.message||"Check schema"), 'red');
-                        setLoading(false); return;
-                    }
-
-                    if(state.expenses > 0) {
-                        await supabase.from('job_expenses').insert([{ job_id: jObj.id, amount: state.expenses }]);
-                    }
-
-                    setState(INITIAL_STATE);
-                    setEditId(null);
-                    showToast(editId ? "Mission updated! ⚡" : "Mission deployed! 🚀");
-                    setView('agenda'); refresh();
-                } catch(e) { showToast("Error: "+e.message, 'red'); }
-                setLoading(false);
-            };
-
-            const printInvoice = (job) => {
-                const win = window.open('', '_blank');
-                win.document.write(`<html><head><style>body{font-family:'Outfit',sans-serif;padding:50px;background:#fff} .h{border-bottom:5px solid #22c55e;padding-bottom:20px;display:flex;justify-content:space-between;align-items:center} .logo{font-size:2rem;font-weight:900;font-style:italic} .total{background:#000;color:#fff;padding:40px;border-radius:20px;margin-top:30px} .row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee}</style></head><body>
-                <div class="h"><div class="logo">ELEVORE</div><div><h2>INVOICE</h2><p>${new Date().toLocaleDateString()}</p></div></div>
-                <div style="margin-top:30px"><h3>BILL TO:</h3><p><b>${job.client_name}</b></p><p>${job.address}</p><p>${job.client_phone||''}</p></div>
-                <div style="margin-top:20px"><div class="row"><span>Service</span><span>${job.service_type?.toUpperCase()}</span></div><div class="row"><span>Date</span><span>${job.scheduled_date||'TBD'}</span></div><div class="row"><span>Team</span><span>${job.team_assigned||'TBD'}</span></div><div class="row"><span>Total</span><span>$${job.total_price}</span></div><div class="row"><span>Deposit Paid</span><span>-$${job.deposit_paid}</span></div></div>
-                <div class="total"><h1 style="margin:0">BALANCE DUE: $${job.total_price - job.deposit_paid}</h1><p>Zelle: (407) 952-4228</p></div>
-                <p style="margin-top:60px;text-align:center;color:#999">Thank you for choosing Elevore Premium Services</p>
-                <script>window.print();<\/script></body></html>`);
-                win.document.close();
-            };
-
-            const sendWhatsApp = (job, type='confirm') => {
-                const p = job.client_phone?.replace(/\D/g,'') || '';
-                const phone = p.length === 10 ? '1'+p : p;
-                const balance = job.total_price - job.deposit_paid;
-                const msgs = {
-                    confirm: `Hi ${job.client_name}! ✨ This is Elevore confirming your ${job.service_type} service on ${job.scheduled_date||'your scheduled date'}. Balance due: $${balance}. Pay via Zelle: (407) 952-4228. Thank you! 🏠`,
-                    reminder: `Hi ${job.client_name}! 🔔 Friendly reminder from Elevore — your cleaning is coming up on ${job.scheduled_date||'soon'}. Balance: $${balance}. Questions? Reply here!`,
-                    review: `Hi ${job.client_name}! 🌟 Thank you for choosing Elevore! We hope your home is sparkling clean. We'd love a Google review: g.page/elevore. Thank you! ⭐⭐⭐⭐⭐`
-                };
-                window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msgs[type])}`, '_blank');
-            };
-
-            // Finance metrics
-            const finance = useMemo(() => {
-                const gross = jobs.reduce((a,b) => a+(b.total_price||0), 0);
-                const collected = jobs.reduce((a,b) => a+(b.deposit_paid||0), 0);
-                const exp = jobs.reduce((acc,job) => acc+(job.job_expenses?.reduce((s,e)=>s+e.amount,0)||0), 0);
-                const net = collected - (collected * STAFF_PAY_RATE) - exp;
-                const pending = gross - collected;
-                const avgTicket = jobs.length ? Math.round(gross / jobs.length) : 0;
-                const byStatus = { lead:0, scheduled:0, paid:0 };
-                jobs.forEach(j => { if(byStatus[j.status]!==undefined) byStatus[j.status]++; });
-                return { gross, collected, net: Math.max(0, Math.round(net)), pending, exp, avgTicket, byStatus, total: jobs.length };
-            }, [jobs]);
-
-            // Filtered jobs
-            const filteredJobs = useMemo(() => {
-                return jobs.filter(j => {
-                    const matchStatus = filterStatus === 'all' || j.status === filterStatus;
-                    const matchSearch = !searchQ || j.client_name?.toLowerCase().includes(searchQ.toLowerCase()) || j.address?.toLowerCase().includes(searchQ.toLowerCase());
-                    return matchStatus && matchSearch;
-                });
-            }, [jobs, filterStatus, searchQ]);
-
-            // AUTH
-            if (view === 'auth') return (
-                <div className="min-h-screen flex items-center justify-center p-6 bg-black">
-                    <div className="galactic-card p-12 w-full max-w-sm text-center space-y-8 border-t-4 border-amber-500 shadow-2xl">
-                        <div className="w-20 h-20 bg-amber-500 rounded-3xl mx-auto flex items-center justify-center font-black italic text-4xl text-black">E</div>
-                        <div>
-                            <h1 className="text-3xl font-black uppercase tracking-tighter text-white">ELEVORE <span className="text-amber-500 italic">OMEGA</span></h1>
-                            <p className="text-[9px] text-slate-500 uppercase tracking-widest mt-1">v88.0 Supreme Command</p>
+                    {/* Job summary */}
+                    <div className="titan-glass p-8 border-t-4 border-green-500 space-y-4">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <p className="text-[10px] font-black text-slate-500 uppercase">Client</p>
+                                <h2 className="text-2xl font-black italic uppercase text-white">{job.client_name}</h2>
+                            </div>
+                            <span className={`text-[9px] font-black px-3 py-2 rounded-2xl uppercase ${job.status==='paid'?'bg-blue-600 text-white':job.status==='completed'?'bg-purple-600 text-white':'bg-amber-500 text-black'}`}>{job.status}</span>
                         </div>
-                        <input type="password" placeholder="ACCESS PIN" className="input-lumina text-center text-2xl tracking-[0.5em]" onChange={e => setPass(e.target.value)} onKeyDown={e => e.key==='Enter' && (pass==='2026'?(setView('intel'),setRole('admin')):null)} />
-                        <div className="flex gap-2">
-                            <button onClick={() => pass==='2026'?(setView('intel'),setRole('admin')):alert("Access Denied")} className="flex-1 bg-amber-500 text-black py-4 rounded-2xl font-black uppercase active:scale-95 transition-all shadow-xl">Admin</button>
-                            <button onClick={() => pass==='staff'?(setView('agenda'),setRole('staff')):alert("Access Denied")} className="flex-1 bg-white text-black py-4 rounded-2xl font-black shadow-xl active:scale-95 transition-all">Staff</button>
+                        <div className="text-[10px] text-slate-500 font-black uppercase space-y-1">
+                            <p>📋 {job.service_type?.toUpperCase()}</p>
+                            <p>📅 {job.scheduled_date||'TBD'}</p>
+                            <p>👥 {job.team_assigned||'TBD'}</p>
+                            <p>📍 {job.address}</p>
+                        </div>
+                        <div className="space-y-1">
+                            <div className="flex justify-between text-[9px] font-black uppercase text-slate-500"><span>Booked</span><span>Complete</span></div>
+                            <div className="progress-bar"><div className="progress-fill" style={{width:`${statusMap[job.status]||0}%`}}></div></div>
                         </div>
                     </div>
-                </div>
-            );
 
-            return (
-                <div className="min-h-screen flex flex-col pb-32">
-                    {/* TOAST */}
-                    {toast && (
-                        <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[500] px-8 py-4 rounded-2xl font-black uppercase text-sm shadow-2xl transition-all animate-in fade-in ${toast.color==='red'?'bg-red-600 text-white':'bg-green-600 text-white'}`}>
-                            {toast.msg}
+                    {/* Balance */}
+                    <div className="titan-glass p-8 text-center space-y-2">
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Balance Due</p>
+                        <h3 className="text-7xl font-black italic tracking-tighter text-white">${bal}</h3>
+                        <p className="text-[10px] text-green-500 font-black uppercase pt-2">💸 Zelle: (407) 952-4228</p>
+                    </div>
+
+                    {/* QUOTE APPROVAL SIGNATURE */}
+                    {!job.approval_signature?(
+                        <div className="titan-glass p-8 border border-amber-500/30 space-y-4">
+                            <div className="text-center">
+                                <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">📝 Quote Approval</p>
+                                <p className="text-[9px] text-slate-500 font-black italic">Sign below to approve this service quote</p>
+                            </div>
+                            <SignaturePad onSave={saveApprovalSig} label="Sign to approve quote" />
+                        </div>
+                    ):(
+                        <div className="titan-glass p-6 border border-green-600/30 text-center space-y-2">
+                            <p className="text-[10px] text-green-500 font-black uppercase">✅ Quote Approved</p>
+                            <img src={job.approval_signature} className="h-12 mx-auto opacity-60" />
                         </div>
                     )}
 
-                    <nav className="p-6 sticky top-0 z-[100] bg-black/90 backdrop-blur-3xl border-b border-white/5 flex justify-between items-center shadow-2xl">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center font-black text-black italic text-2xl shadow-xl">E</div>
-                            <div>
-                                <h1 className="font-black text-xl tracking-tighter uppercase text-white leading-none">Elevore <span className="text-green-500">Omega</span></h1>
-                                <div className="flex items-center gap-2 mt-1"><div className="gold-pulse"></div><p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">v88.0 Active</p></div>
-                            </div>
+                    {/* BEFORE PHOTOS */}
+                    {(job.before_photos?.length>0)&&(
+                        <div className="titan-glass p-6">
+                            <PhotoDrive photos={job.before_photos||[]} label="📸 Before Photos" />
                         </div>
-                        <div className="flex gap-2 items-center">
-                            {role==='admin' && <button onClick={() => setIsPrivate(p=>!p)} className="p-3 bg-slate-900 rounded-xl text-slate-500 hover:text-amber-500 transition-all"><i data-lucide={isPrivate?'eye-off':'eye'}></i></button>}
-                            <button onClick={() => setView('auth')} className="p-3 bg-slate-900 rounded-xl text-slate-500 hover:text-white"><i data-lucide="log-out"></i></button>
+                    )}
+
+                    {/* AFTER PHOTOS + FINAL SIGNATURE (only after job completed) */}
+                    {job.approval_signature&&(
+                        <React.Fragment>
+                            {(job.after_photos?.length>0)&&(
+                                <div className="titan-glass p-6">
+                                    <PhotoDrive photos={job.after_photos||[]} label="✨ After Photos" />
+                                </div>
+                            )}
+                            {job.after_photos?.length>0&&!job.final_signature&&(
+                                <div className="titan-glass p-8 border border-purple-500/30 space-y-4">
+                                    <div className="text-center">
+                                        <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-1">🏁 Job Completion Sign-off</p>
+                                        <p className="text-[9px] text-slate-500 font-black italic">Sign to confirm the job is complete and you're satisfied</p>
+                                    </div>
+                                    <SignaturePad onSave={saveFinalSig} label="Sign to confirm completion" />
+                                </div>
+                            )}
+                            {job.final_signature&&(
+                                <div className="titan-glass p-6 border border-purple-600/30 text-center space-y-2">
+                                    <p className="text-[10px] text-purple-400 font-black uppercase">🏁 Completion Confirmed</p>
+                                    <img src={job.final_signature} className="h-12 mx-auto opacity-60" />
+                                </div>
+                            )}
+                        </React.Fragment>
+                    )}
+
+                    {/* REVIEW + REFERRAL */}
+                    {job.status==='paid'&&(
+                        <div className="space-y-3">
+                            <button onClick={()=>window.open(GOOGLE_LINK)} className="w-full gold-button py-4 rounded-2xl font-black uppercase text-sm active:scale-95 transition-all">⭐ Leave a Google Review</button>
+                            <button onClick={()=>{const link=`${window.location.origin}${window.location.pathname}?ref=${job.client_name?.replace(/\s/g,'_')}`;navigator.clipboard?.writeText(link);showToast("Referral link copied! 🎁");}} className="w-full bg-white/10 text-white py-4 rounded-2xl font-black uppercase text-sm active:scale-95 transition-all">🎁 Share & Get $25 Off</button>
                         </div>
-                    </nav>
+                    )}
 
-                    {loading && <div className="fixed inset-0 bg-black/80 z-[300] flex items-center justify-center"><div className="w-16 h-16 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div></div>}
+                    <p className="text-[9px] text-slate-700 text-center uppercase font-bold px-6 leading-loose">Elevore Premium Services • Real-time sync • Legally binding signatures</p>
+                </div>
+            </div>
+        );
+    }
 
-                    <main className="max-w-xl mx-auto w-full p-4 space-y-6">
-                        {role==='admin' && (
-                            <div className="flex gap-2 bg-black/40 p-2 rounded-[2.5rem] border border-white/5 shadow-2xl">
-                                <button onClick={() => setView('intel')} className={`tab-btn flex-1 py-3 rounded-2xl text-[10px] uppercase font-black transition-all ${view==='intel'?'tab-active':'text-slate-500'}`}>Intel</button>
-                                <button onClick={() => setView('agenda')} className={`tab-btn flex-1 py-3 rounded-2xl text-[10px] uppercase font-black transition-all ${view==='agenda'?'tab-active':'text-slate-500'}`}>Logs</button>
-                                <button onClick={() => { setEditId(null); setState(INITIAL_STATE); setView('deploy'); setDeployTab('identity'); }} className={`tab-btn flex-1 py-3 rounded-2xl text-[10px] uppercase font-black transition-all ${view==='deploy'?'bg-amber-500 text-black shadow-xl':'text-slate-500'}`}>+ New</button>
+    // ══ AUTH ══
+    if(view==='auth') return(
+        <div className="min-h-screen flex items-center justify-center p-6 bg-black">
+            <div className="titan-glass p-12 w-full max-w-sm text-center space-y-8 border-t-4 border-amber-500 shadow-2xl">
+                <div className="w-20 h-20 bg-amber-500 rounded-3xl mx-auto flex items-center justify-center font-black italic text-4xl text-black">E</div>
+                <div>
+                    <h1 className="text-3xl font-black uppercase tracking-tighter text-white">ELEVORE <span className="text-amber-500 italic">EMPIRE</span></h1>
+                    <p className="text-[9px] text-slate-500 uppercase tracking-widest mt-1">v92.0 — Signature Edition</p>
+                </div>
+                <input type="password" placeholder="ACCESS PIN" className="input-ceo text-center text-2xl tracking-[0.5em]"
+                    onChange={e=>setPass(e.target.value)}
+                    onKeyDown={e=>e.key==='Enter'&&(pass==='2026'?(setView('intel'),setRole('admin')):pass==='staff'?(setView('staff'),setRole('staff')):null)}/>
+                <div className="flex gap-2">
+                    <button onClick={()=>pass==='2026'?(setView('intel'),setRole('admin')):showToast("Access Denied",'red')} className="flex-1 bg-amber-500 text-black py-4 rounded-2xl font-black uppercase active:scale-95 transition-all shadow-xl">Admin</button>
+                    <button onClick={()=>pass==='staff'?(setView('staff'),setRole('staff')):showToast("Access Denied",'red')} className="flex-1 bg-white text-black py-4 rounded-2xl font-black shadow-xl active:scale-95 transition-all">Staff</button>
+                </div>
+            </div>
+        </div>
+    );
+
+    // ══ STAFF VIEW ══
+    if(role==='staff'){
+        if(activeStaff){
+            const [checked,setChecked]=useState({});
+            const done=Object.values(checked).filter(Boolean).length;
+
+            const addAfterPhoto=async(url)=>{
+                const current=activeStaff.after_photos||[];
+                await supabase.from('elevore_missions').update({after_photos:[...current,url]}).eq('id',activeStaff.id);
+                showToast("Photo added ✓");
+                const updated={...activeStaff,after_photos:[...current,url]};
+                setActiveStaff(updated);
+            };
+
+            return(
+                <div className="min-h-screen p-6 bg-black pb-20">
+                    {toast&&<div className={`toast fixed top-6 left-1/2 -translate-x-1/2 z-[500] px-8 py-4 rounded-2xl font-black uppercase text-sm shadow-2xl ${toast.color==='red'?'bg-red-600':'bg-green-600'} text-white`}>{toast.msg}</div>}
+                    <button onClick={()=>setActiveStaff(null)} className="mb-6 flex items-center gap-2 text-slate-500 font-black uppercase text-[10px]"><i data-lucide="arrow-left" className="w-4 h-4"></i> Back</button>
+                    <div className="max-w-md mx-auto space-y-6">
+                        <div className="titan-glass p-8 border-t-4 border-green-500">
+                            <h2 className="text-2xl font-black uppercase italic text-white mb-1">{activeStaff.client_name}</h2>
+                            <p className="text-[10px] text-slate-500 uppercase font-black">{activeStaff.service_type} • {activeStaff.address}</p>
+                            <button onClick={()=>window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activeStaff.address)}`)} className="mt-3 w-full bg-green-600/20 text-green-400 py-3 rounded-2xl font-black uppercase text-[10px]">📍 Navigate</button>
+                        </div>
+
+                        {/* Before photos (view only for staff) */}
+                        {activeStaff.before_photos?.length>0&&(
+                            <div className="titan-glass p-6">
+                                <PhotoDrive photos={activeStaff.before_photos} label="📸 Before Photos (reference)" />
                             </div>
                         )}
 
-                        {/* ── INTEL ── */}
-                        {view==='intel' && (
-                            <div className="space-y-6 animate-in fade-in duration-500">
-                                {/* Net Profit Hero */}
-                                <section className="galactic-card p-10 border-t-4 border-amber-500 shadow-2xl text-center kpi-glow">
-                                    <p className="text-[10px] font-black text-slate-500 mb-3 uppercase tracking-widest italic">Real Net Profit</p>
-                                    <h2 className="text-8xl italic tracking-tighter text-white font-black leading-none">${isPrivate?'****':finance.net}</h2>
-                                    <div className="mt-4 progress-bar w-full">
-                                        <div className="progress-fill" style={{width:`${Math.min(100,(finance.collected/Math.max(finance.gross,1))*100)}%`}}></div>
-                                    </div>
-                                    <p className="text-[9px] text-slate-500 mt-2 font-black uppercase">{Math.round((finance.collected/Math.max(finance.gross,1))*100)}% collected</p>
-                                </section>
-
-                                {/* KPI Grid */}
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="galactic-card p-6 border-b-4 border-orange-500 text-center">
-                                        <p className="text-[9px] text-slate-500 mb-1 uppercase">Pending</p>
-                                        <p className="text-3xl font-black text-orange-400 italic">${isPrivate?'***':finance.pending}</p>
-                                    </div>
-                                    <div className="galactic-card p-6 border-b-4 border-blue-500 text-center">
-                                        <p className="text-[9px] text-slate-500 mb-1 uppercase">Portfolio</p>
-                                        <p className="text-3xl font-black text-blue-400 italic">${isPrivate?'***':finance.gross}</p>
-                                    </div>
-                                    <div className="galactic-card p-6 border-b-4 border-green-500 text-center">
-                                        <p className="text-[9px] text-slate-500 mb-1 uppercase">Avg Ticket</p>
-                                        <p className="text-3xl font-black text-green-400 italic">${isPrivate?'***':finance.avgTicket}</p>
-                                    </div>
-                                    <div className="galactic-card p-6 border-b-4 border-purple-500 text-center">
-                                        <p className="text-[9px] text-slate-500 mb-1 uppercase">Total Jobs</p>
-                                        <p className="text-3xl font-black text-purple-400 italic">{finance.total}</p>
-                                    </div>
-                                </div>
-
-                                {/* Pipeline */}
-                                <div className="galactic-card p-6">
-                                    <p className="text-[10px] text-slate-500 uppercase font-black mb-4 tracking-widest">Pipeline Status</p>
-                                    <div className="grid grid-cols-3 gap-3">
-                                        {[{k:'lead',color:'text-yellow-400',label:'Leads'},{k:'scheduled',color:'text-blue-400',label:'Scheduled'},{k:'paid',color:'text-green-400',label:'Paid'}].map(s => (
-                                            <div key={s.k} className="text-center bg-white/5 p-4 rounded-2xl">
-                                                <p className={`text-3xl font-black italic ${s.color}`}>{finance.byStatus[s.k]||0}</p>
-                                                <p className="text-[8px] text-slate-500 uppercase font-black mt-1">{s.label}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Service breakdown */}
-                                <div className="galactic-card p-6">
-                                    <p className="text-[10px] text-slate-500 uppercase font-black mb-4 tracking-widest">Revenue by Service</p>
-                                    {['regular','deep','moveout','postcon','handyman'].map(type => {
-                                        const typeJobs = jobs.filter(j=>j.service_type===type);
-                                        const typeRev = typeJobs.reduce((a,b)=>a+(b.total_price||0),0);
-                                        if (!typeJobs.length) return null;
-                                        return (
-                                            <div key={type} className="flex justify-between items-center py-2 border-b border-white/5">
-                                                <span className="text-[10px] font-black uppercase text-slate-400">{type} ({typeJobs.length})</span>
-                                                <span className="text-sm font-black text-white">${isPrivate?'***':typeRev}</span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                        {/* Checklist */}
+                        <div className="titan-glass p-6 space-y-3">
+                            <div className="flex justify-between items-center mb-2">
+                                <p className="text-[10px] font-black uppercase text-amber-500 tracking-widest">Cleaning Checklist</p>
+                                <span className="text-[10px] font-black text-white">{done}/{CHECKLIST_ITEMS.length}</span>
                             </div>
+                            <div className="progress-bar mb-4"><div className="progress-fill" style={{width:`${(done/CHECKLIST_ITEMS.length)*100}%`}}></div></div>
+                            {CHECKLIST_ITEMS.map((item,i)=>(
+                                <button key={i} onClick={()=>setChecked(c=>({...c,[i]:!c[i]}))} className={`w-full flex items-center gap-3 p-4 rounded-2xl border transition-all ${checked[i]?'bg-green-600/20 border-green-600/40 text-green-400':'bg-white/5 border-white/5 text-slate-400'}`}>
+                                    <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center flex-shrink-0 ${checked[i]?'bg-green-600 border-green-600':'border-slate-600'}`}>{checked[i]&&<i data-lucide="check" className="w-3 h-3 text-white"></i>}</div>
+                                    <span className="text-[11px] font-black uppercase text-left">{item}</span>
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* After photos upload */}
+                        <div className="titan-glass p-6">
+                            <PhotoDrive photos={activeStaff.after_photos||[]} label="✨ After Photos (add links)" onAdd={addAfterPhoto} />
+                        </div>
+
+                        {done===CHECKLIST_ITEMS.length&&(
+                            <button onClick={async()=>{
+                                await supabase.from('elevore_missions').update({status:'completed'}).eq('id',activeStaff.id);
+                                showToast("Job marked complete! ✅");setActiveStaff(null);refresh();
+                            }} className="w-full gold-button py-6 rounded-[2rem] font-black uppercase text-lg active:scale-95 transition-all shadow-xl">
+                                ✅ Mark Job Complete
+                            </button>
                         )}
-
-                        {/* ── AGENDA / LOGS ── */}
-                        {view==='agenda' && (
-                            <div className="space-y-4 animate-in slide-in-from-bottom-10 pb-20">
-                                {/* Search + Filter */}
-                                <input type="text" placeholder="🔍 Search client or address..." className="input-lumina" value={searchQ} onChange={e => setSearchQ(e.target.value)} />
-                                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                                    {['all','lead','scheduled','paid'].map(s => (
-                                        <button key={s} onClick={() => setFilterStatus(s)} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase whitespace-nowrap transition-all ${filterStatus===s?'bg-amber-500 text-black':'bg-white/5 text-slate-500'}`}>{s}</button>
-                                    ))}
-                                </div>
-
-                                {filteredJobs.length === 0 && (
-                                    <div className="galactic-card p-12 text-center text-slate-500 font-black italic uppercase">No missions found.</div>
-                                )}
-
-                                {filteredJobs.map(job => {
-                                    const isHandyman = job.service_type === 'handyman';
-                                    const balance = job.total_price - job.deposit_paid;
-                                    return (
-                                        <div key={job.id} className={`galactic-card p-6 border-l-[8px] shadow-2xl hover:bg-white/[0.02] transition-all ${isHandyman?'border-green-500':job.status==='paid'?'border-blue-500':job.status==='lead'?'border-yellow-500':'border-amber-500'}`}>
-                                            <div className="flex justify-between items-start mb-4">
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <h3 className="text-xl font-black uppercase italic text-white leading-none">{job.client_name}</h3>
-                                                        <span className={`text-[7px] font-black px-2 py-1 rounded-full uppercase ${job.status==='paid'?'bg-blue-600 text-white':job.status==='lead'?'bg-yellow-500 text-black':'bg-slate-700 text-slate-300'}`}>{job.status}</span>
-                                                        {isHandyman && <span className="text-[7px] bg-green-600 text-black font-black px-2 py-1 rounded-full">🛠️</span>}
-                                                    </div>
-                                                    <p className="text-[9px] text-slate-500 mt-1">{job.service_type?.toUpperCase()} • {job.scheduled_date||'No date'} • {job.team_assigned||'No team'}</p>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex justify-between items-center bg-black/40 p-3 rounded-2xl mb-4">
-                                                <p className="text-[10px] text-slate-400 truncate w-40 italic">{job.address}</p>
-                                                <button onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.address)}`)} className="text-green-500 text-[9px] font-black uppercase px-3 py-1 bg-green-600/10 rounded-xl">GPS</button>
-                                            </div>
-
-                                            {/* Actions Row */}
-                                            <div className="flex gap-2 mb-4">
-                                                <button onClick={() => sendWhatsApp(job,'confirm')} className="flex-1 py-2 bg-green-600/20 text-green-400 rounded-xl text-[8px] font-black uppercase">✅ Confirm</button>
-                                                <button onClick={() => sendWhatsApp(job,'reminder')} className="flex-1 py-2 bg-blue-600/20 text-blue-400 rounded-xl text-[8px] font-black uppercase">🔔 Reminder</button>
-                                                <button onClick={() => sendWhatsApp(job,'review')} className="flex-1 py-2 bg-amber-600/20 text-amber-400 rounded-xl text-[8px] font-black uppercase">⭐ Review</button>
-                                            </div>
-
-                                            <div className="flex justify-between items-end border-t border-white/5 pt-4">
-                                                <div>
-                                                    <p className="text-[10px] text-slate-500 italic font-black uppercase">Balance Due</p>
-                                                    <p className="text-5xl font-black italic tracking-tighter text-white leading-none">${balance}</p>
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    <button onClick={() => printInvoice(job)} className="p-3 bg-slate-800 rounded-xl text-amber-500 hover:scale-110 transition-all"><i data-lucide="file-text" className="w-4 h-4"></i></button>
-                                                    {role==='admin' && (
-                                                        <React.Fragment>
-                                                            <button onClick={() => { setEditId(job.id); setState({...job.specs, totalPrice:job.total_price}); setView('deploy'); setDeployTab('identity'); }} className="p-3 bg-slate-800 rounded-xl text-white hover:bg-blue-600 transition-all"><i data-lucide="edit-3" className="w-4 h-4"></i></button>
-                                                            <button onClick={() => { if(confirm("Archive this mission?")) supabase.from('jobs').delete().eq('id',job.id).then(()=>{showToast("Mission archived");refresh();}); }} className="p-3 bg-red-900/30 text-red-500 rounded-xl hover:bg-red-600 transition-all"><i data-lucide="trash-2" className="w-4 h-4"></i></button>
-                                                        </React.Fragment>
-                                                    )}
-                                                    <button onClick={() => window.open(`https://wa.me/${job.client_phone?.replace(/\D/g,'')||''}`)} className="p-3 bg-green-600 rounded-xl text-white active:scale-90 transition-all"><i data-lucide="message-circle" className="w-4 h-4"></i></button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-
-                        {/* ── DEPLOY ── */}
-                        {view==='deploy' && (
-                            <div className="space-y-6 animate-in zoom-in-95 pb-32">
-                                <div className="flex gap-1 bg-black/40 p-1.5 rounded-[1.8rem] border border-white/5">
-                                    {['identity','specs','add-ons','money'].map(t => (
-                                        <button key={t} onClick={() => setDeployTab(t)} className={`flex-1 py-3 rounded-2xl text-[9px] font-black uppercase transition-all ${deployTab===t?'tab-active':'text-slate-500'}`}>{t}</button>
-                                    ))}
-                                </div>
-
-                                <div className="galactic-card p-8 space-y-6 shadow-2xl">
-
-                                    {deployTab==='identity' && (
-                                        <div className="space-y-4 animate-in fade-in">
-                                            <h3 className="text-[11px] uppercase text-amber-500 font-black italic tracking-widest border-b border-white/5 pb-2">Identity Vector</h3>
-                                            <input type="text" placeholder="CLIENT FULL NAME" value={state.name} className="input-lumina uppercase" onChange={e => onNameChange(e.target.value)} />
-                                            {/* FIX #4 — phone restaurado */}
-                                            <input type="text" placeholder="PHONE NUMBER" value={state.phone} className="input-lumina" onChange={e => setState({...state, phone:e.target.value})} />
-                                            <input type="text" placeholder="FULL STREET ADDRESS" value={state.address} className="input-lumina uppercase text-xs" onChange={e => setState({...state, address:e.target.value})} />
-                                            <textarea placeholder="NOTES (optional)..." value={state.notes} className="input-lumina text-sm resize-none h-20" onChange={e => setState({...state, notes:e.target.value})} />
-                                            <div className="grid grid-cols-3 gap-2">
-                                                {['lead','scheduled','paid'].map(s => (
-                                                    <button key={s} onClick={() => setState({...state, status:s})} className={`py-3 rounded-2xl text-[9px] uppercase font-black border-2 transition-all ${state.status===s?'bg-amber-500 text-black border-amber-500 shadow-lg':'bg-white/5 border-white/5 text-slate-500'}`}>{s}</button>
-                                                ))}
-                                            </div>
-                                            {/* Frequency selector */}
-                                            <div>
-                                                <p className="text-[9px] text-slate-500 uppercase font-black mb-2">Frequency</p>
-                                                <div className="grid grid-cols-4 gap-1">
-                                                    {[{l:'1x',v:'one-time'},{l:'Weekly',v:'weekly'},{l:'Bi-W',v:'bi-weekly'},{l:'Monthly',v:'monthly'}].map(f => (
-                                                        <button key={f.v} onClick={() => setState({...state, frequency:f.v})} className={`py-3 rounded-xl text-[8px] font-black border-2 transition-all ${state.frequency===f.v?'bg-blue-600 border-blue-600 text-white':'bg-white/5 border-white/5 text-slate-500'}`}>{f.l}</button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {deployTab==='specs' && (
-                                        <div className="space-y-6 animate-in fade-in duration-300 text-center font-black uppercase">
-                                            <div className="grid grid-cols-5 gap-1">
-                                                {['regular','deep','moveout','postcon','handyman'].map(s => (
-                                                    <button key={s} onClick={() => setState({...state, svc:s})} className={`py-3 rounded-xl font-black text-[8px] uppercase border-2 transition-all ${state.svc===s?'bg-green-600 border-green-600 text-white shadow-xl':'bg-white/5 border-white/5 text-slate-500'}`}>
-                                                        {s==='handyman'?'🛠️':s}
-                                                    </button>
-                                                ))}
-                                            </div>
-
-                                            {state.svc==='handyman' ? (
-                                                <div className="space-y-4">
-                                                    <div className="bg-white/5 p-6 rounded-3xl border border-white/5">
-                                                        <p className="text-[10px] text-amber-500 uppercase font-black mb-3">Labor Hours</p>
-                                                        <div className="flex justify-between items-center max-w-[200px] mx-auto">
-                                                            <button onClick={() => setState({...state, handymanHours:Math.max(1,state.handymanHours-1)})} className="w-12 h-12 bg-white/10 rounded-xl text-xl font-bold text-white">-</button>
-                                                            <span className="text-4xl font-black italic text-white">{state.handymanHours} hr</span>
-                                                            <button onClick={() => setState({...state, handymanHours:state.handymanHours+1})} className="w-12 h-12 bg-white/10 rounded-xl text-xl font-bold text-white">+</button>
-                                                        </div>
-                                                    </div>
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        <button onClick={() => setState({...state, laborType:'light'})} className={`py-3 rounded-xl text-[9px] font-black border-2 transition-all ${state.laborType==='light'?'bg-blue-600 border-blue-600 text-white':'bg-white/5 border-white/5 text-slate-500'}`}>Light $65/hr</button>
-                                                        <button onClick={() => setState({...state, laborType:'heavy'})} className={`py-3 rounded-xl text-[9px] font-black border-2 transition-all ${state.laborType==='heavy'?'bg-orange-600 border-orange-600 text-white':'bg-white/5 border-white/5 text-slate-500'}`}>Heavy $85/hr</button>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[9px] text-slate-500 uppercase font-black mb-2 text-left">Materials Cost ($) — 20% markup billed</p>
-                                                        <input type="number" placeholder="0" value={state.materialCost||''} className="input-lumina text-blue-400 text-center text-xl font-black" onChange={e => setState({...state, materialCost:parseFloat(e.target.value)||0})} />
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="space-y-4">
-                                                    {state.svc==='postcon' ? (
-                                                        <div className="p-6 bg-white/5 rounded-3xl border border-white/5">
-                                                            <p className="text-[10px] text-amber-500 uppercase font-black mb-2">SqFt</p>
-                                                            <input type="number" value={state.sqft} className="bg-transparent text-6xl font-black text-center w-full text-white outline-none italic" onChange={e => setState({...state, sqft:parseInt(e.target.value)||0})} />
-                                                        </div>
-                                                    ) : (
-                                                        <div className="grid grid-cols-2 gap-2">
-                                                            {[{l:'Beds',k:'beds'},{l:'Baths',k:'baths'},{l:'Living',k:'living'},{l:'Laundry',k:'laundryRoom'}].map(i => (
-                                                                <div key={i.k} className="bg-white/5 p-3 rounded-2xl text-center border border-white/5">
-                                                                    <span className="text-[9px] uppercase block mb-2 text-slate-400 font-black">{i.l}</span>
-                                                                    <div className="flex justify-between items-center">
-                                                                        <button onClick={() => setState({...state,[i.k]:Math.max(0,state[i.k]-1)})} className="w-9 h-9 bg-white/10 rounded-lg text-white font-bold">-</button>
-                                                                        <span className="text-xl font-black italic text-white">{state[i.k]}</span>
-                                                                        <button onClick={() => setState({...state,[i.k]:state[i.k]+1})} className="w-9 h-9 bg-white/10 rounded-lg text-white font-bold">+</button>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                    <div className="grid grid-cols-4 gap-1 pt-2 border-t border-white/5">
-                                                        {[{l:'Tidy',v:0.9},{l:'Avg',v:1},{l:'Heavy',v:1.5},{l:'Ext',v:2.1}].map(c => (
-                                                            <button key={c.l} onClick={() => setState({...state,complexity:c.v})} className={`py-3 rounded-xl text-[8px] font-black border-2 transition-all ${state.complexity===c.v?'bg-orange-500 border-orange-500 text-white':'bg-white/5 border-white/5 text-slate-500'}`}>{c.l}</button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {/* FIX #1 — deployTab (no tab) */}
-                                    {deployTab==='add-ons' && (
-                                        <div className="space-y-6 animate-in fade-in">
-                                            {state.svc==='handyman' ? (
-                                                <div className="p-10 text-center text-slate-500 font-black italic border-2 border-dashed border-white/5 rounded-3xl">🛠️ Handyman: time & materials only.</div>
-                                            ) : (
-                                                <React.Fragment>
-                                                    <div className="grid grid-cols-2 gap-3">
-                                                        {[{id:'oven',label:'Oven',p:35},{id:'fridge',label:'Fridge',p:30},{id:'windows',label:'Windows',p:50},{id:'pethair',label:'Pet Hair',p:25},{id:'garage',label:'Garage',p:40}].map(ex => (
-                                                            <button key={ex.id} onClick={() => setState({...state,[ex.id]:!state[ex.id]})}
-                                                                className={`p-4 rounded-2xl flex justify-between items-center border transition-all ${state[ex.id]?'bg-green-600 border-green-600 text-white font-black shadow-xl':'bg-white/5 border-white/5 text-slate-500'}`}>
-                                                                <span className="text-[10px] uppercase font-black">{ex.label}</span>
-                                                                <span className="text-[10px] font-black">+${ex.p}</span>
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                    <div className="bg-amber-500/10 p-6 rounded-[2rem] border border-amber-500/20 text-center space-y-3">
-                                                        <span className="text-[10px] uppercase italic text-amber-500 font-black tracking-widest">Laundry Loads</span>
-                                                        <div className="flex justify-between items-center max-w-[150px] mx-auto">
-                                                            <button onClick={() => setState({...state,laundryLoads:Math.max(0,state.laundryLoads-1)})} className="w-12 h-12 bg-amber-500 text-black rounded-xl text-xl font-bold">-</button>
-                                                            <span className="text-4xl font-black italic text-white">{state.laundryLoads}</span>
-                                                            <button onClick={() => setState({...state,laundryLoads:state.laundryLoads+1})} className="w-12 h-12 bg-amber-500 text-black rounded-xl text-xl font-bold">+</button>
-                                                        </div>
-                                                    </div>
-                                                </React.Fragment>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {/* FIX #1 — deployTab (no tab) */}
-                                    {deployTab==='money' && (
-                                        <div className="space-y-6 animate-in fade-in">
-                                            <div className="grid grid-cols-2 gap-4 text-center font-black uppercase">
-                                                <div className="space-y-1"><p className="text-[9px] text-slate-500">Expenses ($)</p><input type="number" value={state.expenses} className="input-lumina text-orange-400 text-center" onChange={e => setState({...state,expenses:parseFloat(e.target.value)||0})} /></div>
-                                                <div className="space-y-1"><p className="text-[9px] text-slate-500">Discount (%)</p>
-                                                    <select value={state.discount} className="input-lumina text-red-500 font-black text-center text-sm appearance-none" onChange={e => setState({...state,discount:parseInt(e.target.value)})}>
-                                                        <option value="0">0%</option><option value="10">10%</option><option value="20">20%</option><option value="30">30%</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div className="space-y-4 border-t border-white/5 pt-4 text-center font-black uppercase">
-                                                <select value={state.team} className="input-lumina text-xs text-center" onChange={e => setState({...state,team:e.target.value})}>
-                                                    <option value="">Select Team...</option>
-                                                    <option value="Team Alpha">Team Alpha</option>
-                                                    <option value="Team Beta">Team Beta</option>
-                                                    <option value="Jose Mario">Jose Mario (CEO)</option>
-                                                </select>
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-1"><p className="text-[9px] text-slate-500">Deploy Date</p><input type="date" value={state.date} className="input-lumina text-[11px] font-black" onChange={e => setState({...state,date:e.target.value})} /></div>
-                                                    <div className="space-y-1"><p className="text-[9px] text-slate-500">Deposit ($)</p><input type="number" placeholder="0" value={state.deposit} className="input-lumina text-blue-400 text-center" onChange={e => setState({...state,deposit:parseFloat(e.target.value)||0})} /></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Price card */}
-                                <div className="bg-white text-black p-10 rounded-[4rem] text-center shadow-2xl relative overflow-hidden active:scale-95 transition-all">
-                                    <div className="absolute top-0 left-0 w-full h-2 bg-green-500 animate-pulse"></div>
-                                    <div className="flex justify-between items-center mb-4">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Deployment Value</p>
-                                        <span className={`text-[9px] font-black px-3 py-1 rounded-lg border ${pricingEngine.adviceColor} border-current`}>{pricingEngine.advice}</span>
-                                    </div>
-                                    <h4 className="text-[7rem] font-black italic tracking-tighter leading-none mb-8 text-black">
-                                        <span className="text-4xl align-top mr-1 font-light opacity-30">$</span>{state.totalPrice}
-                                    </h4>
-                                    {state.svc==='handyman' && (
-                                        <p className="text-[10px] text-slate-500 font-black italic mb-4 uppercase">Labor ${state.handymanHours*(state.laborType==='heavy'?85:65)} + Materials ${Math.round((state.materialCost||0)*1.2)}</p>
-                                    )}
-                                    <button onClick={deploy} className="w-full bg-slate-900 text-white py-8 rounded-[3rem] font-black text-xl uppercase italic active:scale-90 transition-all shadow-xl shadow-green-500/20">
-                                        {editId ? 'Update Mission ⚡' : 'Execute Deploy 🚀'}
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </main>
-
-                    <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[92%] max-w-sm galactic-card p-3 flex justify-around items-center border border-white/10 shadow-[0_40px_100px_rgba(0,0,0,1)] z-[1000]">
-                        <button onClick={() => setView('intel')} className={`p-4 rounded-2xl flex-1 flex flex-col items-center gap-1 transition-all ${view==='intel'?'text-amber-500 bg-white/5':'text-slate-500'}`}><i data-lucide="brain"></i><span className="text-[8px] font-black uppercase">INTEL</span></button>
-                        <button onClick={() => setView('agenda')} className={`p-4 rounded-2xl flex-1 flex flex-col items-center gap-1 transition-all ${view==='agenda'?'text-green-500 bg-white/5':'text-slate-500'}`}><i data-lucide="shield-check"></i><span className="text-[8px] font-black uppercase">LOGS</span></button>
-                        <button onClick={() => { setEditId(null); setState(INITIAL_STATE); setView('deploy'); setDeployTab('identity'); }} className={`p-4 rounded-2xl flex-1 flex flex-col items-center gap-1 transition-all ${view==='deploy'?'text-blue-500 bg-white/5':'text-slate-500'}`}><i data-lucide="zap"></i><span className="text-[8px] font-black uppercase">NEW</span></button>
-                    </nav>
+                    </div>
                 </div>
             );
         }
+        return(
+            <div className="min-h-screen p-6 bg-black pb-20">
+                <div className="max-w-md mx-auto space-y-6">
+                    <div className="flex justify-between items-center">
+                        <div><h1 className="text-2xl font-black uppercase italic text-white">Today's Missions</h1><p className="text-[10px] text-slate-500 uppercase font-black">{todayStr}</p></div>
+                        <button onClick={()=>{setRole('admin');setView('auth');}} className="p-3 bg-slate-900 rounded-xl text-slate-500"><i data-lucide="log-out"></i></button>
+                    </div>
+                    {staffJobs.length===0&&<div className="titan-glass p-12 text-center text-slate-500 font-black italic uppercase">No missions today.</div>}
+                    {staffJobs.map(job=>(
+                        <button key={job.id} onClick={()=>setActiveStaff(job)} className="w-full titan-glass p-6 border-l-[8px] border-amber-500 text-left active:scale-95 transition-all">
+                            <h3 className="text-xl font-black uppercase italic text-white">{job.client_name}</h3>
+                            <p className="text-[10px] text-slate-500 uppercase mt-1">{job.service_type} • {job.scheduled_date}</p>
+                            <p className="text-[10px] text-slate-400 mt-1 italic">{job.address}</p>
+                            <div className="flex justify-between items-center mt-3">
+                                <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase ${job.status==='completed'?'bg-green-600 text-white':job.status==='paid'?'bg-blue-600 text-white':'bg-amber-500 text-black'}`}>{job.status}</span>
+                                <span className="text-[10px] font-black text-amber-500 uppercase">Tap to start →</span>
+                            </div>
+                        </button>
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-        setTimeout(() => lucide.createIcons(), 500);
-    </script>
+    // ══ ADMIN MAIN ══
+    return(
+        <div className="min-h-screen flex flex-col pb-32">
+            {toast&&<div className={`toast fixed top-6 left-1/2 -translate-x-1/2 z-[500] px-8 py-4 rounded-2xl font-black uppercase text-sm shadow-2xl ${toast.color==='red'?'bg-red-600':'bg-green-600'} text-white`}>{toast.msg}</div>}
+
+            <nav className="p-6 sticky top-0 z-[100] bg-black/90 backdrop-blur-3xl border-b border-white/5 flex justify-between items-center shadow-2xl">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center font-black text-black italic text-2xl shadow-xl">E</div>
+                    <div>
+                        <h1 className="font-black text-xl tracking-tighter uppercase text-white leading-none">Elevore <span className="text-amber-500 italic font-light">Empire</span></h1>
+                        <div className="flex items-center gap-2 mt-1"><div className="gold-pulse"></div><p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">v92.0 Signature</p></div>
+                    </div>
+                </div>
+                <div className="flex gap-2">
+                    <button onClick={()=>setIsPrivate(p=>!p)} className="p-3 bg-slate-900 rounded-xl text-slate-500 hover:text-amber-500 transition-all"><i data-lucide={isPrivate?'eye-off':'eye'}></i></button>
+                    <button onClick={()=>setView('auth')} className="p-3 bg-slate-900 rounded-xl text-slate-500 hover:text-white transition-all"><i data-lucide="log-out"></i></button>
+                </div>
+            </nav>
+
+            {loading&&<div className="fixed inset-0 bg-black/80 z-[300] flex items-center justify-center"><div className="w-16 h-16 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div></div>}
+
+            <main className="max-w-xl mx-auto w-full p-4 space-y-6">
+                <div className="flex gap-1 bg-black/40 p-2 rounded-[2.5rem] border border-white/5 shadow-2xl">
+                    <button onClick={()=>setView('intel')}   className={`tab-btn flex-1 py-3 rounded-2xl text-[9px] uppercase font-black transition-all ${view==='intel'?'tab-active':'text-slate-500'}`}>Intel</button>
+                    <button onClick={()=>setView('agenda')}  className={`tab-btn flex-1 py-3 rounded-2xl text-[9px] uppercase font-black transition-all ${view==='agenda'?'tab-active':'text-slate-500'}`}>Logs</button>
+                    <button onClick={()=>setView('clients')} className={`tab-btn flex-1 py-3 rounded-2xl text-[9px] uppercase font-black transition-all ${view==='clients'?'tab-active':'text-slate-500'}`}>DNA</button>
+                    <button onClick={()=>setView('drive')}   className={`tab-btn flex-1 py-3 rounded-2xl text-[9px] uppercase font-black transition-all ${view==='drive'?'tab-active':'text-slate-500'}`}>Drive</button>
+                    <button onClick={()=>{setEditId(null);setState(INITIAL_STATE);setView('deploy');setDeployTab('identity');}} className={`tab-btn flex-1 py-3 rounded-2xl text-[9px] uppercase font-black transition-all ${view==='deploy'?'bg-amber-500 text-black shadow-xl':'text-slate-500'}`}>+New</button>
+                </div>
+
+                {/* ══ INTEL ══ */}
+                {view==='intel'&&(
+                    <div className="space-y-6 animate-in fade-in duration-500">
+                        <section className="titan-glass p-10 border-t-4 border-green-600 shadow-2xl">
+                            <p className="text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest italic">Monthly Goal — ${MONTHLY_GOAL.toLocaleString()}</p>
+                            <h2 className="text-8xl italic tracking-tighter text-white font-black leading-none">{Math.round(finance.progress)}%</h2>
+                            <div className="progress-bar mt-4 mb-3"><div className="progress-fill" style={{width:`${finance.progress}%`}}></div></div>
+                            <div className="flex justify-between text-[9px] text-slate-500 font-black uppercase">
+                                <span>Billed: ${isPrivate?'***':finance.gross.toLocaleString()}</span>
+                                <span>{finance.gross>=MONTHLY_GOAL?'🎯 GOAL HIT!':'Left: $'+(MONTHLY_GOAL-finance.gross).toLocaleString()}</span>
+                            </div>
+                            <p className="text-[10px] text-green-500 mt-3 font-black uppercase italic text-center">Net Profit: ${isPrivate?'****':finance.net.toLocaleString()}</p>
+                        </section>
+                        <div className="grid grid-cols-2 gap-4">
+                            {[
+                                {label:'Pending',   val:'$'+(isPrivate?'***':finance.pending.toLocaleString()),  color:'border-orange-500',text:'text-orange-400'},
+                                {label:'Avg Ticket',val:'$'+(isPrivate?'***':finance.avgTicket),                 color:'border-blue-500',  text:'text-blue-400'},
+                                {label:'Recurring', val:'$'+(isPrivate?'***':finance.recurring.toLocaleString()),color:'border-purple-500',text:'text-purple-400'},
+                                {label:'Total Jobs',val:finance.total,                                           color:'border-green-500', text:'text-green-400'},
+                            ].map(k=>(
+                                <div key={k.label} className={`titan-glass p-6 border-b-4 ${k.color} text-center`}>
+                                    <p className="text-[9px] text-slate-500 mb-1 uppercase font-black">{k.label}</p>
+                                    <p className={`text-3xl font-black italic ${k.text}`}>{k.val}</p>
+                                </div>
+                            ))}
+                        </div>
+                        {finance.pendingSignatures.length>0&&(
+                            <div className="titan-glass p-6 border border-amber-500/30">
+                                <p className="text-[10px] text-amber-500 uppercase font-black mb-3 tracking-widest">✍️ Pending Client Signatures ({finance.pendingSignatures.length})</p>
+                                {finance.pendingSignatures.map(job=>(
+                                    <div key={job.id} className="flex justify-between items-center py-2 border-b border-white/5 last:border-0">
+                                        <div><p className="text-[11px] font-black text-white uppercase">{job.client_name}</p><p className="text-[9px] text-slate-500">${job.total_price}</p></div>
+                                        <button onClick={()=>sendWA(job,'quote')} className="px-3 py-2 bg-amber-500/20 text-amber-400 rounded-xl text-[8px] font-black uppercase">Send Quote</button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {finance.retentionDue.length>0&&(
+                            <div className="titan-glass p-6 border border-blue-500/30">
+                                <p className="text-[10px] text-blue-400 uppercase font-black mb-3 tracking-widest">🔔 Retention Due</p>
+                                {finance.retentionDue.map(job=>(
+                                    <div key={job.id} className="flex justify-between items-center py-2 border-b border-white/5 last:border-0">
+                                        <div><p className="text-[11px] font-black text-white uppercase">{job.client_name}</p><p className="text-[9px] text-slate-500">Next: {job.next_visit}</p></div>
+                                        <button onClick={()=>sendWA(job,'reminder')} className="px-3 py-2 bg-blue-500/20 text-blue-400 rounded-xl text-[8px] font-black uppercase">Remind</button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <div className="titan-glass p-6">
+                            <p className="text-[10px] text-slate-500 uppercase font-black mb-4 tracking-widest">Pipeline</p>
+                            <div className="grid grid-cols-3 gap-3">
+                                {[{k:'lead',color:'text-yellow-400',label:'Leads'},{k:'scheduled',color:'text-blue-400',label:'Scheduled'},{k:'paid',color:'text-green-400',label:'Paid'}].map(s=>(
+                                    <div key={s.k} className="text-center bg-white/5 p-4 rounded-2xl">
+                                        <p className={`text-3xl font-black italic ${s.color}`}>{finance.byStatus[s.k]||0}</p>
+                                        <p className="text-[8px] text-slate-500 uppercase font-black mt-1">{s.label}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="titan-glass p-6">
+                            <p className="text-[10px] text-slate-500 uppercase font-black mb-4 tracking-widest">Revenue by Service</p>
+                            {Object.entries(finance.byService).length===0&&<p className="text-[10px] text-slate-600 text-center font-black uppercase italic">No data yet.</p>}
+                            {Object.entries(finance.byService).map(([type,rev])=>(
+                                <div key={type} className="flex justify-between items-center py-2 border-b border-white/5 last:border-0">
+                                    <span className="text-[10px] font-black uppercase text-slate-400">{type} ({jobs.filter(j=>j.service_type===type).length})</span>
+                                    <span className="text-sm font-black text-white">${isPrivate?'***':rev.toLocaleString()}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* ══ AGENDA ══ */}
+                {view==='agenda'&&(
+                    <div className="space-y-4 animate-in slide-in-from-bottom-10 pb-24">
+                        <input type="text" placeholder="🔍 Search..." className="input-ceo" value={searchQ} onChange={e=>setSearchQ(e.target.value)} />
+                        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                            {['all','lead','scheduled','completed','paid'].map(s=>(
+                                <button key={s} onClick={()=>setFilterStatus(s)} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase whitespace-nowrap transition-all ${filterStatus===s?'bg-amber-500 text-black':'bg-white/5 text-slate-500'}`}>{s}</button>
+                            ))}
+                        </div>
+                        {filteredJobs.length===0&&<div className="titan-glass p-12 text-center text-slate-500 font-black italic uppercase">No missions found.</div>}
+                        {filteredJobs.map(job=>{
+                            const isHandyman=job.service_type==='handyman';
+                            const bal=job.total_price-job.deposit_paid;
+                            const dna=clientDNA[job.client_name];
+                            const hasSig=!!job.approval_signature;
+                            const hasFinal=!!job.final_signature;
+                            return(
+                                <div key={job.id} className={`titan-glass p-6 border-l-[8px] shadow-2xl hover:bg-white/[0.02] transition-all ${isHandyman?'border-green-500':job.status==='paid'?'border-blue-500':job.status==='lead'?'border-yellow-500':job.status==='completed'?'border-purple-500':'border-amber-500'}`}>
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                                                <h3 className="text-xl font-black uppercase italic text-white leading-none">{job.client_name}</h3>
+                                                <span className={`text-[7px] font-black px-2 py-1 rounded-full uppercase ${job.status==='paid'?'bg-blue-600 text-white':job.status==='lead'?'bg-yellow-500 text-black':job.status==='completed'?'bg-purple-600 text-white':'bg-slate-700 text-slate-300'}`}>{job.status}</span>
+                                                {isHandyman&&<span className="text-[7px] bg-green-600 text-black font-black px-2 py-1 rounded-full">🛠️</span>}
+                                                {dna?.score>=80&&<span className="vip-badge text-[7px] px-2 py-1 rounded-full">⭐ VIP</span>}
+                                                {hasSig&&<span className="text-[7px] bg-green-900 text-green-400 font-black px-2 py-1 rounded-full">✍️ Signed</span>}
+                                                {hasFinal&&<span className="text-[7px] bg-purple-900 text-purple-400 font-black px-2 py-1 rounded-full">🏁 Done</span>}
+                                            </div>
+                                            <p className="text-[9px] text-slate-500 uppercase">{job.service_type} • {job.scheduled_date||'No date'} • {job.team_assigned||'No team'}</p>
+                                        </div>
+                                        {dna&&<DNABadge score={dna.score}/>}
+                                    </div>
+                                    <div className="flex justify-between items-center bg-black/40 p-3 rounded-2xl mb-3">
+                                        <p className="text-[10px] text-slate-400 truncate w-44 italic">{job.address}</p>
+                                        <button onClick={()=>window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.address)}`)} className="text-green-500 text-[9px] font-black uppercase px-3 py-1 bg-green-600/10 rounded-xl">GPS</button>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2 mb-3">
+                                        <button onClick={()=>sendWA(job,'confirm')}  className="py-2 bg-green-600/20 text-green-400 rounded-xl text-[8px] font-black uppercase">✅ Confirm</button>
+                                        <button onClick={()=>sendWA(job,'reminder')} className="py-2 bg-blue-600/20 text-blue-400 rounded-xl text-[8px] font-black uppercase">🔔 Remind</button>
+                                        <button onClick={()=>sendWA(job,'review')}   className="py-2 bg-amber-600/20 text-amber-400 rounded-xl text-[8px] font-black uppercase">⭐ Review</button>
+                                        <button onClick={()=>sendWA(job,'quote')}    className="py-2 bg-purple-600/20 text-purple-400 rounded-xl text-[8px] font-black uppercase">📋 Quote</button>
+                                        <button onClick={()=>sendWA(job,'referral')} className="py-2 bg-pink-600/20 text-pink-400 rounded-xl text-[8px] font-black uppercase">🎁 Referral</button>
+                                        <button onClick={()=>sendWA(job,'portal')}   className="py-2 bg-slate-600/20 text-slate-400 rounded-xl text-[8px] font-black uppercase">🔗 Portal</button>
+                                    </div>
+                                    <div className="flex justify-between items-end border-t border-white/5 pt-4">
+                                        <div>
+                                            <p className="text-[10px] text-slate-500 italic font-black uppercase">Balance</p>
+                                            <p className="text-5xl font-black italic tracking-tighter text-white leading-none">${bal}</p>
+                                            {job.next_visit&&<p className="text-[9px] text-amber-500 font-black uppercase mt-1">↩ Next: {job.next_visit}</p>}
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button onClick={()=>printInvoice(job)} className="p-3 bg-slate-800 text-amber-500 rounded-xl hover:scale-110 transition-all"><i data-lucide="file-text" className="w-4 h-4"></i></button>
+                                            <button onClick={()=>{setEditId(job.id);setState({...job.specs,totalPrice:job.total_price});setView('deploy');setDeployTab('identity');}} className="p-3 bg-slate-800 text-white rounded-xl hover:bg-blue-600 transition-all"><i data-lucide="edit-3" className="w-4 h-4"></i></button>
+                                            <button onClick={()=>{if(confirm("Archive?"))supabase.from('elevore_missions').delete().eq('id',job.id).then(()=>{showToast("Archived ✓");refresh();});}} className="p-3 bg-red-900/30 text-red-500 rounded-xl hover:bg-red-600 transition-all"><i data-lucide="trash-2" className="w-4 h-4"></i></button>
+                                            <button onClick={()=>window.open(`https://wa.me/${job.client_phone?.replace(/\D/g,'')||''}`)} className="p-3 bg-green-600 text-white rounded-xl active:scale-90 transition-all"><i data-lucide="message-circle" className="w-4 h-4"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {/* ══ CLIENT DNA ══ */}
+                {view==='clients'&&(
+                    <div className="space-y-4 animate-in fade-in pb-24">
+                        <div className="titan-glass p-6 border-t-4 border-purple-500">
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Client Intelligence</p>
+                            <p className="text-[10px] text-slate-600 font-black italic">Score = visits + payments + recurring + referrals</p>
+                        </div>
+                        {clients.length===0&&<div className="titan-glass p-12 text-center text-slate-500 font-black italic uppercase">No clients yet.</div>}
+                        {clients.sort((a,b)=>(clientDNA[b.name]?.score||0)-(clientDNA[a.name]?.score||0)).map(client=>{
+                            const dna=clientDNA[client.name]||{score:0,jobs:0};
+                            const cJobs=jobs.filter(j=>j.client_name===client.name);
+                            const totalSpent=cJobs.reduce((a,b)=>a+(b.total_price||0),0);
+                            const lastJob=cJobs[0];
+                            return(
+                                <div key={client.name} className="titan-glass p-6 hover:bg-white/[0.02] transition-all">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 className="text-lg font-black uppercase italic text-white">{client.name}</h3>
+                                                {dna.score>=80&&<span className="vip-badge text-[7px] px-2 py-1 rounded-full">⭐ VIP</span>}
+                                            </div>
+                                            <p className="text-[9px] text-slate-500 uppercase">{client.phone}</p>
+                                            <div className="flex gap-4 mt-2">
+                                                <span className="text-[9px] font-black text-white">{dna.jobs} jobs</span>
+                                                <span className="text-[9px] font-black text-green-400">${totalSpent.toLocaleString()} total</span>
+                                                {lastJob&&<span className="text-[9px] font-black text-slate-500">Last: {lastJob.scheduled_date||'N/A'}</span>}
+                                            </div>
+                                        </div>
+                                        <DNABadge score={dna.score}/>
+                                    </div>
+                                    <div className="progress-bar mt-3 mb-3"><div className="progress-fill" style={{width:`${dna.score}%`}}></div></div>
+                                    <div className="flex gap-2">
+                                        <button onClick={()=>window.open(`https://wa.me/${client.phone?.replace(/\D/g,'')}`)} className="flex-1 py-2 bg-green-600/20 text-green-400 rounded-xl text-[8px] font-black uppercase">💬 WA</button>
+                                        <button onClick={()=>{if(lastJob)sendWA(lastJob,'referral');}} className="flex-1 py-2 bg-pink-600/20 text-pink-400 rounded-xl text-[8px] font-black uppercase">🎁 Ref</button>
+                                        <button onClick={()=>{setState({...INITIAL_STATE,name:client.name,phone:client.phone,address:client.address,...client.specs});setView('deploy');setDeployTab('specs');}} className="flex-1 py-2 bg-amber-600/20 text-amber-400 rounded-xl text-[8px] font-black uppercase">+ Job</button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {/* ══ DRIVE ══ */}
+                {view==='drive'&&(
+                    <div className="space-y-4 animate-in fade-in pb-24">
+                        <div className="titan-glass p-6 border-t-4 border-blue-500">
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">📁 Photo Drive</p>
+                            <p className="text-[10px] text-slate-600 font-black italic">Before & after photos for every mission</p>
+                        </div>
+                        {jobs.filter(j=>(j.before_photos?.length||0)+(j.after_photos?.length||0)>0).length===0&&(
+                            <div className="titan-glass p-12 text-center text-slate-500 font-black italic uppercase">No photos yet. Staff adds after photos during jobs.</div>
+                        )}
+                        {jobs.filter(j=>(j.before_photos?.length||0)+(j.after_photos?.length||0)>0).map(job=>(
+                            <div key={job.id} className="titan-glass p-6 space-y-4">
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <h3 className="text-lg font-black uppercase italic text-white">{job.client_name}</h3>
+                                        <p className="text-[9px] text-slate-500 uppercase">{job.service_type} • {job.scheduled_date}</p>
+                                    </div>
+                                    <span className={`text-[7px] font-black px-2 py-1 rounded-full uppercase ${job.status==='paid'?'bg-blue-600 text-white':'bg-slate-700 text-slate-300'}`}>{job.status}</span>
+                                </div>
+                                {job.before_photos?.length>0&&(
+                                    <div>
+                                        <PhotoDrive photos={job.before_photos} label="📸 Before" onAdd={async(url)=>{
+                                            const curr=job.before_photos||[];
+                                            await supabase.from('elevore_missions').update({before_photos:[...curr,url]}).eq('id',job.id);
+                                            showToast("Photo added ✓");refresh();
+                                        }} />
+                                    </div>
+                                )}
+                                {job.after_photos?.length>0&&(
+                                    <div>
+                                        <PhotoDrive photos={job.after_photos} label="✨ After" onAdd={async(url)=>{
+                                            const curr=job.after_photos||[];
+                                            await supabase.from('elevore_missions').update({after_photos:[...curr,url]}).eq('id',job.id);
+                                            showToast("Photo added ✓");refresh();
+                                        }} />
+                                    </div>
+                                )}
+                                {/* Admin can add before photos */}
+                                {!job.before_photos?.length&&(
+                                    <PhotoDrive photos={[]} label="📸 Add Before Photos" onAdd={async(url)=>{
+                                        await supabase.from('elevore_missions').update({before_photos:[url]}).eq('id',job.id);
+                                        showToast("Photo added ✓");refresh();
+                                    }} />
+                                )}
+                            </div>
+                        ))}
+                        {/* Jobs with no photos yet — allow admin to add before photos */}
+                        {jobs.filter(j=>(j.before_photos?.length||0)===0&&(j.after_photos?.length||0)===0).length>0&&(
+                            <div className="titan-glass p-6 border border-white/5">
+                                <p className="text-[10px] text-slate-500 uppercase font-black mb-4">Jobs without photos yet</p>
+                                {jobs.filter(j=>(j.before_photos?.length||0)===0&&(j.after_photos?.length||0)===0).map(job=>(
+                                    <div key={job.id} className="flex justify-between items-center py-2 border-b border-white/5 last:border-0">
+                                        <div><p className="text-[11px] font-black text-white uppercase">{job.client_name}</p><p className="text-[9px] text-slate-500">{job.service_type}</p></div>
+                                        <button onClick={async()=>{
+                                            const url=prompt("Paste before photo link:");
+                                            if(url){await supabase.from('elevore_missions').update({before_photos:[url]}).eq('id',job.id);showToast("Photo added ✓");refresh();}
+                                        }} className="px-3 py-2 bg-blue-500/20 text-blue-400 rounded-xl text-[8px] font-black uppercase">+ Before Photo</button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* ══ DEPLOY ══ */}
+                {view==='deploy'&&(
+                    <div className="space-y-6 animate-in zoom-in-95 pb-32">
+                        <div className="flex gap-1 bg-black/40 p-1.5 rounded-[1.8rem] border border-white/5">
+                            {['identity','specs','add-ons','money'].map(t=>(
+                                <button key={t} onClick={()=>setDeployTab(t)} className={`flex-1 py-3 rounded-2xl text-[9px] uppercase font-black transition-all ${deployTab===t?'tab-active':'text-slate-500'}`}>{t}</button>
+                            ))}
+                        </div>
+                        <div className="titan-glass p-8 space-y-6 shadow-2xl">
+
+                            {deployTab==='identity'&&(
+                                <div className="space-y-4 animate-in fade-in">
+                                    <h3 className="text-[11px] uppercase text-amber-500 font-black italic tracking-widest border-b border-white/5 pb-2">Identity Matrix</h3>
+                                    <input type="text" placeholder="CLIENT FULL NAME" value={state.name} className="input-ceo uppercase" onChange={e=>onNameChange(e.target.value)} />
+                                    <input type="text" placeholder="PHONE NUMBER" value={state.phone} className="input-ceo" onChange={e=>setState({...state,phone:e.target.value})} />
+                                    <input type="text" placeholder="FULL STREET ADDRESS" value={state.address} className="input-ceo uppercase text-xs" onChange={e=>setState({...state,address:e.target.value})} />
+                                    <input type="text" placeholder="AUDIT PHOTOS LINK (optional)" value={state.audit_link} className="input-ceo text-blue-400 text-xs" onChange={e=>setState({...state,audit_link:e.target.value})} />
+                                    <textarea placeholder="INTERNAL NOTES..." value={state.notes} className="input-ceo text-sm resize-none h-20" onChange={e=>setState({...state,notes:e.target.value})} />
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {['lead','scheduled','paid'].map(s=>(
+                                            <button key={s} onClick={()=>setState({...state,status:s})} className={`py-3 rounded-2xl text-[9px] uppercase font-black border-2 transition-all ${state.status===s?'bg-amber-500 text-black border-amber-500 shadow-lg':'bg-white/5 border-white/5 text-slate-500'}`}>{s}</button>
+                                        ))}
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] text-slate-500 uppercase font-black mb-2">Frequency (auto-schedules next visit)</p>
+                                        <div className="grid grid-cols-4 gap-1">
+                                            {[{l:'1x',v:'one-time'},{l:'Weekly',v:'weekly'},{l:'Bi-W',v:'bi-weekly'},{l:'Monthly',v:'monthly'}].map(f=>(
+                                                <button key={f.v} onClick={()=>setState({...state,frequency:f.v})} className={`py-3 rounded-xl text-[8px] font-black border-2 transition-all ${state.frequency===f.v?'bg-blue-600 border-blue-600 text-white':'bg-white/5 border-white/5 text-slate-500'}`}>{f.l}</button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {deployTab==='specs'&&(
+                                <div className="space-y-5 animate-in fade-in duration-300 text-center font-black uppercase">
+                                    <div className="grid grid-cols-5 gap-1">
+                                        {['regular','deep','moveout','postcon','handyman'].map(s=>(
+                                            <button key={s} onClick={()=>setState({...state,svc:s,selectedQuickJobs:[]})} className={`py-3 rounded-xl font-black text-[8px] border-2 transition-all ${state.svc===s?'bg-green-600 border-green-600 text-white shadow-xl':'bg-white/5 border-white/5 text-slate-500'}`}>
+                                                {s==='handyman'?'🛠️':s}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {state.svc==='handyman'?(
+                                        <div className="space-y-4 text-left">
+                                            <div className="bg-white/5 p-5 rounded-3xl border border-white/5">
+                                                <p className="text-[10px] text-amber-500 uppercase font-black mb-3 text-center">Labor Hours × $85/hr</p>
+                                                <div className="flex justify-between items-center max-w-[200px] mx-auto">
+                                                    <button onClick={()=>setState({...state,laborHours:Math.max(1,state.laborHours-1)})} className="w-11 h-11 bg-white/10 rounded-xl text-xl font-bold text-white">-</button>
+                                                    <span className="text-4xl font-black italic text-white">{state.laborHours} hr</span>
+                                                    <button onClick={()=>setState({...state,laborHours:state.laborHours+1})} className="w-11 h-11 bg-white/10 rounded-xl text-xl font-bold text-white">+</button>
+                                                </div>
+                                                <p className="text-[9px] text-slate-500 mt-2 font-black italic text-center">Labor: ${state.laborHours*85}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] text-slate-500 uppercase font-black mb-2">Quick Flat-Rate Tasks</p>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {QUICK_JOBS.map(q=>{const sel=state.selectedQuickJobs.includes(q.id);return(
+                                                        <button key={q.id} onClick={()=>setState(s=>({...s,selectedQuickJobs:sel?s.selectedQuickJobs.filter(x=>x!==q.id):[...s.selectedQuickJobs,q.id]}))}
+                                                            className={`p-3 rounded-xl border text-[9px] font-black transition-all flex justify-between ${sel?'bg-green-600 border-green-600 text-white':'bg-white/5 border-white/10 text-slate-400'}`}>
+                                                            <span>{q.label}</span><span>${q.p}</span>
+                                                        </button>
+                                                    );})}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] text-slate-500 uppercase font-black mb-2">Materials ($) — Tiered markup</p>
+                                                <input type="number" placeholder="0" value={state.materialCost||''} className="input-ceo text-blue-400 text-center text-xl font-black" onChange={e=>setState({...state,materialCost:parseFloat(e.target.value)||0})} />
+                                                {state.materialCost>0&&<p className="text-[9px] text-slate-500 text-center mt-1 font-black italic">Billed: ${Math.round(state.materialCost*(state.materialCost<50?1.4:state.materialCost<200?1.3:1.2))} ({state.materialCost<50?'40%':state.materialCost<200?'30%':'20%'} markup)</p>}
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] text-slate-500 uppercase font-black mb-2">Risk Margin</p>
+                                                <div className="grid grid-cols-4 gap-1">
+                                                    {RISK_PRESETS.map(r=>(
+                                                        <button key={r.v} onClick={()=>setState({...state,riskMargin:r.v})} className={`py-3 rounded-xl text-[8px] font-black border-2 transition-all ${state.riskMargin===r.v?'bg-orange-500 border-orange-500 text-white':'bg-white/5 border-white/5 text-slate-500'}`}>{r.label}{r.v>0?` +$${r.v}`:''}</button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="bg-black/40 p-4 rounded-2xl border border-white/5 text-[9px] font-black uppercase space-y-1">
+                                                <div className="flex justify-between text-slate-400"><span>Labor</span><span>${pricingEngine.laborTotal}</span></div>
+                                                <div className="flex justify-between text-slate-400"><span>Quick Jobs</span><span>${pricingEngine.quickTotal}</span></div>
+                                                <div className="flex justify-between text-slate-400"><span>Materials</span><span>${pricingEngine.materialTotal}</span></div>
+                                                <div className="flex justify-between text-slate-400"><span>Risk</span><span>+${state.riskMargin}</span></div>
+                                                <div className="flex justify-between text-white border-t border-white/10 pt-1"><span>Total</span><span>${pricingEngine.total}</span></div>
+                                            </div>
+                                        </div>
+                                    ):state.svc==='postcon'?(
+                                        <div className="p-6 bg-white/5 rounded-3xl border border-white/5">
+                                            <p className="text-[10px] text-amber-500 uppercase font-black mb-2">SqFt Area</p>
+                                            <input type="number" value={state.sqft} className="bg-transparent text-7xl font-black text-center w-full text-white outline-none italic leading-none" onChange={e=>setState({...state,sqft:parseInt(e.target.value)||0})} />
+                                        </div>
+                                    ):(
+                                        <div className="space-y-4">
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {[{l:'Beds',k:'beds'},{l:'Baths',k:'baths'},{l:'Living',k:'living'},{l:'Laundry',k:'laundryRoom'}].map(i=>(
+                                                    <div key={i.k} className="bg-white/5 p-3 rounded-2xl text-center border border-white/5">
+                                                        <span className="text-[9px] uppercase block mb-2 text-slate-400 font-black">{i.l}</span>
+                                                        <div className="flex justify-between items-center">
+                                                            <button onClick={()=>setState({...state,[i.k]:Math.max(0,state[i.k]-1)})} className="w-9 h-9 bg-white/10 rounded-lg text-white font-bold">-</button>
+                                                            <span className="text-xl font-black italic text-white">{state[i.k]}</span>
+                                                            <button onClick={()=>setState({...state,[i.k]:state[i.k]+1})} className="w-9 h-9 bg-white/10 rounded-lg text-white font-bold">+</button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="grid grid-cols-4 gap-1 pt-2 border-t border-white/5">
+                                                {[{l:'Tidy',v:0.9},{l:'Avg',v:1},{l:'Heavy',v:1.5},{l:'Ext',v:2.1}].map(c=>(
+                                                    <button key={c.l} onClick={()=>setState({...state,complexity:c.v})} className={`py-3 rounded-xl text-[8px] font-black border-2 transition-all ${state.complexity===c.v?'bg-orange-500 border-orange-500 text-white shadow-lg':'bg-white/5 border-white/5 text-slate-500'}`}>{c.l}</button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {deployTab==='add-ons'&&(
+                                <div className="space-y-5 animate-in fade-in">
+                                    {state.svc==='handyman'?(
+                                        <div className="p-10 text-center text-slate-500 font-black italic border-2 border-dashed border-white/5 rounded-3xl">🛠️ Handyman: time & materials only.</div>
+                                    ):(
+                                        <React.Fragment>
+                                            <h3 className="text-[10px] uppercase text-amber-500 italic font-black text-center border-b border-white/5 pb-2">Premium Matrix</h3>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                {ADDONS.map(ex=>(
+                                                    <button key={ex.id} onClick={()=>setState({...state,[ex.id]:!state[ex.id]})}
+                                                        className={`p-4 rounded-2xl flex justify-between items-center border transition-all ${state[ex.id]?'bg-green-600 border-green-600 text-white font-black shadow-xl':'bg-white/5 border-white/5 text-slate-500'}`}>
+                                                        <span className="text-[10px] uppercase font-black">{ex.label}</span>
+                                                        <span className="text-[10px] font-black">+${ex.p}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <div className="bg-amber-500/10 p-6 rounded-[2rem] border border-amber-500/20 text-center space-y-3">
+                                                <span className="text-[10px] uppercase italic text-amber-500 font-black tracking-widest">Laundry Loads</span>
+                                                <div className="flex justify-between items-center max-w-[150px] mx-auto">
+                                                    <button onClick={()=>setState({...state,laundryLoads:Math.max(0,state.laundryLoads-1)})} className="w-12 h-12 bg-amber-500 text-black rounded-xl text-xl font-bold">-</button>
+                                                    <span className="text-4xl font-black italic text-white">{state.laundryLoads}</span>
+                                                    <button onClick={()=>setState({...state,laundryLoads:state.laundryLoads+1})} className="w-12 h-12 bg-amber-500 text-black rounded-xl text-xl font-bold">+</button>
+                                                </div>
+                                            </div>
+                                        </React.Fragment>
+                                    )}
+                                </div>
+                            )}
+
+                            {deployTab==='money'&&(
+                                <div className="space-y-5 animate-in fade-in">
+                                    <div className="grid grid-cols-2 gap-4 text-center font-black uppercase">
+                                        <div className="space-y-1"><p className="text-[9px] text-slate-500">Expenses ($)</p><input type="number" value={state.expenses} className="input-ceo text-orange-400 text-center" onChange={e=>setState({...state,expenses:parseFloat(e.target.value)||0})} /></div>
+                                        <div className="space-y-1"><p className="text-[9px] text-slate-500">Discount (%)</p>
+                                            <select value={state.discount} className="input-ceo text-red-500 font-black text-center text-sm appearance-none" onChange={e=>setState({...state,discount:parseInt(e.target.value)})}>
+                                                <option value="0">0%</option><option value="10">10%</option><option value="20">20%</option><option value="30">30%</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3 border-t border-white/5 pt-4">
+                                        <select value={state.team} className="input-ceo text-xs text-center" onChange={e=>setState({...state,team:e.target.value})}>
+                                            <option value="">Select Team...</option>
+                                            <option value="Team Alpha">Team Alpha</option>
+                                            <option value="Team Beta">Team Beta</option>
+                                            <option value="Jose Mario">Jose Mario (CEO)</option>
+                                        </select>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-1"><p className="text-[9px] text-slate-500 uppercase font-black">Deploy Date</p><input type="date" value={state.date} className="input-ceo text-[11px] font-black" onChange={e=>setState({...state,date:e.target.value})} /></div>
+                                            <div className="space-y-1"><p className="text-[9px] text-slate-500 uppercase font-black">Deposit ($)</p><input type="number" placeholder="0" value={state.deposit} className="input-ceo text-blue-400 font-black text-center" onChange={e=>setState({...state,deposit:parseFloat(e.target.value)||0})} /></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="bg-white text-black p-10 rounded-[4rem] text-center shadow-2xl relative overflow-hidden active:scale-95 transition-all">
+                            <div className="absolute top-0 left-0 w-full h-2 bg-green-500 animate-pulse"></div>
+                            <div className="flex justify-between items-center mb-4">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Deployment Value</p>
+                                <span className={`text-[9px] font-black px-3 py-1 rounded-lg border ${pricingEngine.adviceColor} border-current`}>{pricingEngine.advice}</span>
+                            </div>
+                            <h4 className="text-[7rem] font-black italic tracking-tighter leading-none mb-6 text-black">
+                                <span className="text-4xl align-top mr-1 font-light opacity-30">$</span>{state.totalPrice}
+                            </h4>
+                            <button onClick={deploy} className="w-full bg-slate-900 text-white py-8 rounded-[3rem] font-black text-xl uppercase italic active:scale-90 transition-all shadow-xl shadow-green-500/20">
+                                {editId?'Update Mission ⚡':'Execute Deploy 🚀'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </main>
+
+            <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[92%] max-w-sm titan-card p-3 flex justify-around items-center border border-white/10 shadow-[0_40px_80px_rgba(0,0,0,1)] z-[1000]">
+                <button onClick={()=>setView('intel')}   className={`p-3 rounded-2xl flex-1 flex flex-col items-center gap-1 transition-all ${view==='intel'?'text-amber-500 bg-white/5':'text-slate-500'}`}><i data-lucide="brain"></i><span className="text-[7px] font-black uppercase">Intel</span></button>
+                <button onClick={()=>setView('agenda')}  className={`p-3 rounded-2xl flex-1 flex flex-col items-center gap-1 transition-all ${view==='agenda'?'text-green-500 bg-white/5':'text-slate-500'}`}><i data-lucide="shield-check"></i><span className="text-[7px] font-black uppercase">Logs</span></button>
+                <button onClick={()=>setView('clients')} className={`p-3 rounded-2xl flex-1 flex flex-col items-center gap-1 transition-all ${view==='clients'?'text-purple-400 bg-white/5':'text-slate-500'}`}><i data-lucide="users"></i><span className="text-[7px] font-black uppercase">DNA</span></button>
+                <button onClick={()=>setView('drive')}   className={`p-3 rounded-2xl flex-1 flex flex-col items-center gap-1 transition-all ${view==='drive'?'text-blue-400 bg-white/5':'text-slate-500'}`}><i data-lucide="image"></i><span className="text-[7px] font-black uppercase">Drive</span></button>
+                <button onClick={()=>{setEditId(null);setState(INITIAL_STATE);setView('deploy');setDeployTab('identity');}} className={`p-3 rounded-2xl flex-1 flex flex-col items-center gap-1 transition-all ${view==='deploy'?'text-blue-500 bg-white/5':'text-slate-500'}`}><i data-lucide="zap"></i><span className="text-[7px] font-black uppercase">New</span></button>
+            </nav>
+        </div>
+    );
+}
+
+const root=ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App/>);
+setTimeout(()=>lucide.createIcons(),500);
+</script>
 </body>
 </html>
