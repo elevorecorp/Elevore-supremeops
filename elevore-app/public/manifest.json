@@ -1,0 +1,19 @@
+{
+  "name": "Elevore Empire",
+  "short_name": "Elevore",
+  "description": "Premium Property Services Management",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#f59e0b",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "https://api.dicebear.com/7.x/initials/png?seed=E&backgroundColor=f59e0b&fontSize=40&size=192", "sizes": "192x192", "type": "image/png" },
+    { "src": "https://api.dicebear.com/7.x/initials/png?seed=E&backgroundColor=f59e0b&fontSize=40&size=512", "sizes": "512x512", "type": "image/png" }
+  ],
+  "categories": ["business", "productivity"],
+  "shortcuts": [
+    { "name": "New Job", "url": "/?view=deploy", "description": "Deploy a new mission" },
+    { "name": "Agenda", "url": "/?view=agenda", "description": "View all jobs" }
+  ]
+}
