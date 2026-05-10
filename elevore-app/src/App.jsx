@@ -189,6 +189,7 @@ function App() {
     const [reports,setReports]=useState([]);
     const [reportDesc,setReportDesc]=useState('');
     const [staffList,setStaffList]=useState([]);
+    const [staffName,setStaffName]=useState('');
     const t=T[lang];
 
     const showToast=(msg,color='green')=>{ setToast({msg,color}); setTimeout(()=>setToast(null),3500); };
@@ -678,18 +679,34 @@ function App() {
                 </div>
                 <input type="password" placeholder="ACCESS PIN" className="inp text-center text-xl tracking-[0.5em]"
                     onChange={e=>setPass(e.target.value)}
-                    onKeyDown={e=>{if(e.key==='Enter'){if(pass===ADMIN_PIN){setView('brief');setRole('admin');}else if(pass===STAFF_PIN){setView('staff');setRole('staff');}}}}/>
-                <div className="flex gap-2">
-                    <button onClick={()=>pass===ADMIN_PIN?(setView('brief'),setRole('admin')):showToast("Access Denied",'red')} className="flex-1 bg-amber-500 text-black py-4 rounded-xl font-black uppercase active:scale-95 shadow-xl">Admin</button>
-                    <button onClick={()=>pass===STAFF_PIN?(setView('staff'),setRole('staff')):showToast("Access Denied",'red')} className="flex-1 bg-white text-black py-4 rounded-xl font-black shadow-xl active:scale-95">Staff</button>
-                </div>
+                    onKeyDown={e=>{
+                        if(e.key==='Enter'){
+                            if(pass===ADMIN_PIN){setView('brief');setRole('admin');}
+                            else {
+                                const member = staffList.find(s=>s.pin === pass);
+                                if(member){ setStaffName(member.name); setRole('staff'); setView('staff'); }
+                                else if(pass===STAFF_PIN){ setRole('staff'); setView('staff'); }
+                                else showToast("Access Denied",'red');
+                            }
+                        }
+                    }}/>
+                <button onClick={()=>{
+                    if(pass===ADMIN_PIN){setView('brief');setRole('admin');}
+                    else {
+                        const member = staffList.find(s=>s.pin === pass);
+                        if(member){ setStaffName(member.name); setRole('staff'); setView('staff'); }
+                        else if(pass===STAFF_PIN){ setRole('staff'); setView('staff'); }
+                        else showToast("Access Denied",'red');
+                    }
+                }} className="w-full gold py-4 rounded-xl font-black uppercase active:scale-95 shadow-xl">Unlock Matrix</button>
             </div>
         </div>
     );
 
     // ── STAFF VIEW ───────────────────────────────────────────
     if(role==='staff'){
-        const staffEarnings = payrollSheet.find(p => p.name === pass) || {gross:0, pay:0, bonus:0, jobs:0};
+        const sName = staffName || pass;
+        const staffEarnings = payrollSheet.find(p => p.name === sName) || {gross:0, pay:0, bonus:0, jobs:0};
         
         if(activeStaff){
 
@@ -949,7 +966,7 @@ function App() {
                                         const {error} = await sb.from('elevore_reports').insert({
                                             type: reportModal.type,
                                             description: reportDesc,
-                                            staff_name: pass,
+                                            staff_name: staffName || pass,
                                             job_id: reportModal.jobId || null,
                                             status: 'open'
                                         });
@@ -1529,17 +1546,20 @@ function App() {
                             <div className="flex gap-2">
                                 <input type="text" id="staff_name" placeholder="Name" className="inp flex-1 text-[10px] uppercase"/>
                                 <input type="text" id="staff_phone" placeholder="Phone" className="inp flex-1 text-[10px] uppercase"/>
+                                <input type="text" id="staff_pin" placeholder="PIN" className="inp w-20 text-[10px] text-center"/>
                                 <button onClick={async()=>{
                                     const n = document.getElementById('staff_name').value;
                                     const p = document.getElementById('staff_phone').value;
-                                    if(!n) return showToast("Name required",'red');
+                                    const pin = document.getElementById('staff_pin').value;
+                                    if(!n || !pin) return showToast("Name & PIN required",'red');
                                     setLoading(true);
-                                    const {error} = await sb.from('elevore_staff').insert({name:n, phone:p});
+                                    const {error} = await sb.from('elevore_staff').insert({name:n, phone:p, pin:pin});
                                     setLoading(false);
                                     if(!error){
                                         showToast("Staff added! ✓");
                                         document.getElementById('staff_name').value='';
                                         document.getElementById('staff_phone').value='';
+                                        document.getElementById('staff_pin').value='';
                                         refresh();
                                     }
                                 }} className="px-4 bg-blue-600 text-white rounded-xl font-black text-lg active:scale-95">+</button>
@@ -1552,7 +1572,10 @@ function App() {
                                 <div key={s.id} className="g p-4 flex justify-between items-center border border-white/5">
                                     <div>
                                         <h3 className="text-sm font-black uppercase italic text-white">{s.name}</h3>
-                                        <p className="text-[8px] text-slate-500 font-black uppercase">{s.phone || 'No phone'}</p>
+                                        <div className="flex gap-2 items-center">
+                                            <p className="text-[8px] text-slate-500 font-black uppercase">{s.phone || 'No phone'}</p>
+                                            <span className="text-[7px] bg-white/10 px-1.5 py-0.5 rounded text-amber-500 font-black">PIN: {s.pin}</span>
+                                        </div>
                                     </div>
                                     <div className="flex gap-2">
                                         <button onClick={()=>window.open(`https://wa.me/${s.phone?.replace(/\D/g,'')}`)} className="p-2 bg-green-600/20 text-green-400 rounded-lg active:scale-95">💬</button>
