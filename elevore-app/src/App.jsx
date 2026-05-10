@@ -171,9 +171,10 @@ function QRCode({url,size=120}) {
 function App() {
     const urlParams   = new URLSearchParams(window.location.search);
     const clientJobId = urlParams.get('mision');
+    const clientID    = urlParams.get('client'); // For full command center
     const refCode     = urlParams.get('ref');
 
-    const [view,       setView]      = useState(clientJobId?'portal':'auth');
+    const [view,       setView]      = useState((clientJobId || clientID)?'portal':'auth');
     const [role,       setRole]      = useState('admin');
     const [pass,       setPass]      = useState("");
     const [jobs,       setJobs]      = useState([]);
@@ -542,7 +543,8 @@ function App() {
             retention:`Hi ${job.client_name}! 🏠 It's been a while since your last clean! Book this week and get 10% off. Reply YES to schedule! 🌟`,
             winback:  `Hi ${job.client_name}! We miss you! 😊 It's been a while. Your home deserves Elevore's touch again. Book today and get a loyalty discount. Reply YES! 💫`,
             bundle:   `Hi ${job.client_name}! 🎯 Add a Deep Clean to your next Regular for just $50 more — save $70! Limited offer. Reply YES to upgrade your booking! 🏠`,
-            urgency:  `⏰ Hi ${job.client_name}! Your Elevore quote expires in 2 hours. Lock in your price now: ${portal} — after that, regular rates apply!`
+            urgency:  `⏰ Hi ${job.client_name}! Your Elevore quote expires in 2 hours. Lock in your price now: ${portal} — after that, regular rates apply!`,
+            arrival:  `🚀 Hi ${job.client_name}! This is the Elevore team. We are on our way to your location! Track our arrival here: ${portal} ✨`
         };
         window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msgs[type])}`,'_blank');
         log(`WA ${type} sent to ${job.client_name}`);
@@ -583,11 +585,70 @@ function App() {
     // ════════════════════════════════════════════════════════
     // ── PORTAL VIEW ──────────────────────────────────────────
     if(view==='portal'){
-        const job=jobs[0];
-        if(!job) return <div className="min-h-screen flex items-center justify-center text-white font-black animate-pulse">Syncing...</div>;
-        const bal=job.total_price-job.deposit_paid;
+        // If we have a specific mission, show detail. If not, show list.
+        const myJobs = clientID ? jobs.filter(j => j.client_name?.replace(/\s/g,'_').toLowerCase() === clientID.toLowerCase()) : jobs;
+        const job = clientJobId ? jobs.find(j => j.id === clientJobId) : (myJobs.length === 1 ? myJobs[0] : null);
+
+        if(!job && !clientID) return <div className="min-h-screen flex items-center justify-center text-white font-black animate-pulse text-xs uppercase">Connecting to Elevore Matrix...</div>;
+        
+        const bal=job ? job.total_price-job.deposit_paid : 0;
         const sm={lead:10,scheduled:30,in_progress:65,completed:90,paid:100};
-        const urgencyLeft=job.urgency_expires?Math.max(0,Math.round((new Date(job.urgency_expires)-Date.now())/3600000)):null;
+        const urgencyLeft=(job && job.urgency_expires)?Math.max(0,Math.round((new Date(job.urgency_expires)-Date.now())/3600000)):null;
+
+        const FullHistoryView = () => (
+            <div className="space-y-5 animate-in fade-in duration-500 pb-20">
+                <div className="g p-6 border-t-4 border-amber-500">
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Your Elevore History</p>
+                    <h2 className="text-2xl font-black italic text-white uppercase">{clientID?.replace(/_/g,' ')}</h2>
+                    <p className="text-[8px] text-slate-600 font-black uppercase mt-1">{myJobs.length} Missions completed/scheduled</p>
+                </div>
+
+                <div className="space-y-3">
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Active & Upcoming</p>
+                    {myJobs.filter(j => j.status !== 'paid').map(j => (
+                        <button key={j.id} onClick={() => window.location.search = `?mision=${j.id}`} className="w-full g p-5 border-l-4 border-amber-500 flex justify-between items-center active:scale-95 transition-all">
+                            <div className="text-left">
+                                <p className="text-[10px] font-black text-white uppercase">{j.service_type}</p>
+                                <p className="text-[7px] text-slate-500 uppercase font-black">{fmtDate(j.scheduled_date)} • {j.status}</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-sm font-black text-white">{fmt$(j.total_price)}</p>
+                                <p className="text-[6px] text-amber-500 font-black uppercase">View Track →</p>
+                            </div>
+                        </button>
+                    ))}
+                    {myJobs.filter(j => j.status !== 'paid').length === 0 && <p className="text-[8px] text-slate-600 italic text-center">No active missions.</p>}
+                </div>
+
+                <div className="space-y-3">
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Past Experiences</p>
+                    {myJobs.filter(j => j.status === 'paid').map(j => (
+                        <button key={j.id} onClick={() => window.location.search = `?mision=${j.id}`} className="w-full g p-5 opacity-70 flex justify-between items-center active:scale-95 transition-all">
+                            <div className="text-left">
+                                <p className="text-[10px] font-black text-white uppercase">{j.service_type}</p>
+                                <p className="text-[7px] text-slate-500 uppercase font-black">{fmtDate(j.scheduled_date)}</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-sm font-black text-green-500">PAID</p>
+                                <p className="text-[6px] text-slate-500 font-black uppercase">View Details →</p>
+                            </div>
+                        </button>
+                    ))}
+                </div>
+            </div>
+        );
+
+        if(!job && clientID) return (
+            <div className="min-h-screen p-5 bg-black">
+                <div className="max-w-md mx-auto space-y-6">
+                    <div className="text-center space-y-4 py-4">
+                        <div className="w-20 h-20 bg-white rounded-[2rem] mx-auto flex items-center justify-center font-black text-black text-3xl italic">E</div>
+                        <h1 className="text-2xl font-black uppercase tracking-[0.4em] text-white">ELEVORE</h1>
+                    </div>
+                    <FullHistoryView />
+                </div>
+            </div>
+        );
 
         const saveApproval=async(sig)=>{const{error}=await sb.from('elevore_missions').update({approval_signature:sig,status:'scheduled'}).eq('id',clientJobId);if(!error){showToast("Quote approved! ✅");loadPortal();}else showToast("Save error",'red');};
         const saveFinal=async(sig)=>{const{error}=await sb.from('elevore_missions').update({final_signature:sig,status:'paid'}).eq('id',clientJobId);if(!error){showToast("Job confirmed! 🌟");loadPortal();}else showToast("Save error",'red');};
@@ -734,6 +795,7 @@ function App() {
                         <div className="space-y-2">
                             <button onClick={()=>window.open(GOOGLE_LINK)} className="w-full gold py-4 rounded-2xl font-black uppercase text-sm active:scale-95 transition-all">{t.review}</button>
                             <button onClick={()=>{const l=`${window.location.origin}${window.location.pathname}?ref=${job.client_name?.replace(/\s/g,'_')}`;navigator.clipboard?.writeText(l);showToast("Link copied! 🎁");}} className="w-full bg-white/10 text-white py-4 rounded-2xl font-black uppercase text-sm active:scale-95 transition-all">{t.refer}</button>
+                            <button onClick={()=>{const l=`${window.location.origin}${window.location.pathname}?client=${job.client_name?.replace(/\s/g,'_')}`;window.location.search=`?client=${job.client_name?.replace(/\s/g,'_')}`}} className="w-full bg-white/5 text-slate-400 py-3 rounded-2xl font-black uppercase text-[10px] active:scale-95 transition-all border border-white/5">View All My Missions →</button>
                         </div>
                     )}
                     {/* Chat directo */}
@@ -828,6 +890,7 @@ function App() {
                                 <div className="flex gap-2">
                                     <button onClick={()=>recordTime(job.id,'check_in_time')} className="flex-1 bg-green-600 text-white py-3 rounded-xl font-black uppercase text-[9px] active:scale-95 flex items-center justify-center gap-1 shadow-lg shadow-green-900/20"><Play className="w-3 h-3" /> Check In</button>
                                     <button onClick={()=>recordTime(job.id,'check_out_time')} className="flex-1 bg-red-600 text-white py-3 rounded-xl font-black uppercase text-[9px] active:scale-95 flex items-center justify-center gap-1"><Square className="w-3 h-3" /> Check Out</button>
+                                    <button onClick={()=>sendWA(job,'arrival')} className="bg-amber-500 text-black px-4 py-3 rounded-xl font-black text-[9px] active:scale-95 flex items-center gap-1">🚀 En Camino</button>
                                     <button onClick={()=>window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.address)}`)} className="bg-blue-600 text-white px-4 py-3 rounded-xl font-black text-[9px] active:scale-95">📍</button>
                                 </div>
                                 {job.check_in_time&&<p className="text-[8px] text-green-400 font-black uppercase mt-3 flex items-center gap-1"><div className="dot-g"/> Session Active: {new Date(job.check_in_time).toLocaleTimeString()}</p>}
@@ -1508,6 +1571,7 @@ function App() {
                                     <div className="pb mt-2 mb-3"><div className="pf" style={{width:`${dna.score}%`}}></div></div>
                                     <div className="flex gap-2">
                                         <button onClick={()=>window.open(`https://wa.me/${client.phone?.replace(/\D/g,'')}`)} className="flex-1 py-2 bg-green-600/20 text-green-400 rounded-xl text-[7px] font-black uppercase active:scale-95">💬 WA</button>
+                                        <button onClick={()=>{const l=`${window.location.origin}${window.location.pathname}?client=${client.name?.replace(/\s/g,'_')}`;navigator.clipboard?.writeText(l);showToast("History Link Copied!");}} className="flex-1 py-2 bg-white/5 text-slate-400 rounded-xl text-[7px] font-black uppercase active:scale-95">🔗 History</button>
                                         <button onClick={()=>{if(last)sendWA(last,'referral');}} className="flex-1 py-2 bg-pink-600/20 text-pink-400 rounded-xl text-[7px] font-black uppercase active:scale-95">🎁 Refer</button>
                                         <button onClick={()=>{if(last)sendWA(last,'bundle');}} className="flex-1 py-2 bg-blue-600/20 text-blue-400 rounded-xl text-[7px] font-black uppercase active:scale-95">🎯 Bundle</button>
                                         <button onClick={()=>{setState({...INITIAL,name:client.name,phone:client.phone,address:client.address,...client.specs});setView('deploy');setDeployTab('specs');}} className="flex-1 py-2 bg-amber-600/20 text-amber-400 rounded-xl text-[7px] font-black uppercase active:scale-95">+ Job</button>
