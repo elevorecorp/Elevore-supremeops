@@ -48,7 +48,7 @@ const INITIAL = {
     laundryLoads:0,expenses:0,deposit:0,discount:0,
     frequency:'one-time',team:"",date:"",status:'scheduled',totalPrice:0,
     laborHours:2,materialCost:0,riskMargin:50,selectedQuickJobs:[],
-    audit_link:"",notes:"",urgencyHours:24
+    audit_link:"",notes:"",preferences:"",urgencyHours:24
 };
 
 // ── HELPERS ──────────────────────────────────────────────────
@@ -71,6 +71,14 @@ function daysAgo(dateStr) {
 }
 function fmt$(n) { return '$'+Math.round(n||0).toLocaleString(); }
 function fmtDate(d) { if(!d) return 'TBD'; return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371e3; // metres
+    const φ1 = lat1 * Math.PI/180; const φ2 = lat2 * Math.PI/180;
+    const Δφ = (lat2-lat1) * Math.PI/180; const Δλ = (lon2-lon1) * Math.PI/180;
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+}
 
 // ── SIGNATURE PAD ────────────────────────────────────────────
 function SigPad({onSave,label="Sign to approve"}) {
@@ -185,6 +193,7 @@ function App() {
     const [lang,setLang]=useState('en');
     const [chatInput,setChatInput]=useState('');
     const [staffTab,setStaffTab]=useState('missions');
+    const [supplyModal,setSupplyModal]=useState(false);
     const [reportModal,setReportModal]=useState(null);
     const [reports,setReports]=useState([]);
     const [reportDesc,setReportDesc]=useState('');
@@ -344,7 +353,30 @@ function App() {
         setLoading(true);
         const time=new Date().toISOString();
         const status=type==='check_in_time'?'in_progress':'completed';
-        const{error}=await sb.from('elevore_missions').update({[type]:time,status}).eq('id',jobId);
+        
+        let coords = null;
+        if(type==='check_in_time' && navigator.geolocation) {
+            try {
+                const pos = await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej));
+                coords = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+                
+                // Geofence Check
+                const job = jobs.find(j=>j.id===jobId);
+                if(job && job.check_in_coords) {
+                    const dist = getDistance(coords.lat, coords.lng, job.check_in_coords.lat, job.check_in_coords.lng);
+                    if(dist > 250) { // 250 meters
+                        if(!confirm(`⚠️ GEOFENCE ALERT: You are ${Math.round(dist)}m away from the mission target. Continue anyway?`)) {
+                            setLoading(false); return;
+                        }
+                    }
+                }
+            } catch(e) { console.warn("GPS failed", e); }
+        }
+
+        const payload = { [type]:time, status };
+        if(coords) payload.check_in_coords = coords;
+
+        const{error}=await sb.from('elevore_missions').update(payload).eq('id',jobId);
         setLoading(false);
         if(!error){
             showToast(type==='check_in_time'?"▶ Mission Started!":"⏹ Mission Completed!");
@@ -731,6 +763,13 @@ function App() {
         const lookup = sName.trim().toLowerCase();
         const staffEarnings = payrollSheet.find(p => p.name.trim().toLowerCase() === lookup) || {gross:0, pay:0, bonus:0, jobs:0};
         
+        // Performance Metrics
+        const myJobs = jobs.filter(j=>j.team_assigned?.trim().toLowerCase() === lookup);
+        const ratings = myJobs.filter(j=>j.specs?.rating).map(j=>j.specs.rating);
+        const avgRating = ratings.length ? (ratings.reduce((a,b)=>a+b,0)/ratings.length).toFixed(1) : "5.0";
+        const proLevel = myJobs.length > 50 ? 'Platinum' : myJobs.length > 20 ? 'Gold' : myJobs.length > 5 ? 'Silver' : 'Bronze';
+        const levelColor = {Bronze:'#cd7f32', Silver:'#c0c0c0', Gold:'#fbbf24', Platinum:'#e5e4e2'}[proLevel];
+        
         if(activeStaff){
 
             const StaffJob=()=>{
@@ -776,6 +815,12 @@ function App() {
                                         <div className="bg-white/5 p-3 rounded-xl border border-white/5">
                                             <p className="text-[8px] text-slate-500 uppercase font-black mb-1">Admin Notes</p>
                                             <p className="text-[10px] text-white font-black italic">"{job.notes}"</p>
+                                        </div>
+                                    )}
+                                    {job.specs?.preferences && (
+                                        <div className="bg-amber-500/10 p-3 rounded-xl border border-amber-500/20">
+                                            <p className="text-[8px] text-amber-500 uppercase font-black mb-1 flex items-center gap-1"><Zap className="w-2 h-2"/> Client Pulse (Preferences)</p>
+                                            <p className="text-[10px] text-white font-black italic">"{job.specs.preferences}"</p>
                                         </div>
                                     )}
                                 </div>
@@ -865,6 +910,7 @@ function App() {
                             </div>
                         </div>
                         <button onClick={()=>{ setView('auth'); setRole('admin'); setPass(''); setStaffName(''); setActiveStaff(null); }} className="p-3 bg-white/5 border border-white/10 rounded-2xl text-slate-500 hover:text-white transition-all active:scale-95"><LogOut className="w-4 h-4" /></button>
+                        <button onClick={()=>setSupplyModal(true)} className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-amber-500 hover:bg-amber-500 hover:text-black transition-all active:scale-95"><Package className="w-4 h-4" /></button>
                     </div>
 
                     {/* STAFF TABS */}
@@ -923,6 +969,24 @@ function App() {
                                 <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest relative z-10">Available Earnings</p>
                                 <h2 className="text-6xl font-black italic text-white tracking-tighter relative z-10">{fmt$(staffEarnings.pay)}</h2>
                                 <p className="text-[8px] text-green-500 font-black uppercase pt-2">Includes base pay for {staffEarnings.jobs} missions</p>
+                            </div>
+                            
+                            {/* Neural Performance Card */}
+                            <div className="g p-6 border-l-4 space-y-4" style={{borderColor: levelColor}}>
+                                <div className="flex justify-between items-center">
+                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Neural Performance</p>
+                                    <span className="text-[8px] font-black px-2 py-1 rounded-lg uppercase" style={{background: levelColor, color: '#000'}}>{proLevel} PRO</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-amber-400"><Star className="w-5 h-5 fill-current"/></div>
+                                        <div><p className="text-[18px] font-black text-white leading-none">{avgRating}</p><p className="text-[7px] text-slate-500 uppercase font-black">Avg Rating</p></div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-blue-400"><Zap className="w-5 h-5 fill-current"/></div>
+                                        <div><p className="text-[18px] font-black text-white leading-none">+{Math.round((myJobs.length/50)*100)}%</p><p className="text-[7px] text-slate-500 uppercase font-black">Efficiency</p></div>
+                                    </div>
+                                </div>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="g p-5 text-center">
@@ -1008,6 +1072,27 @@ function App() {
                                     }
                                 }} className="w-full gold py-4 rounded-xl font-black uppercase active:scale-95 shadow-xl shadow-amber-900/20">Send Report</button>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* SUPPLY CHECKLIST MODAL */}
+                {supplyModal && (
+                    <div className="fixed inset-0 bg-black/95 z-[600] flex items-center justify-center p-6 animate-in zoom-in duration-300">
+                        <div className="g p-8 w-full max-w-sm space-y-6 border-t-4 border-amber-500">
+                            <div className="flex justify-between items-center">
+                                <h2 className="text-xl font-black uppercase italic text-white flex items-center gap-2"><Package className="w-5 h-5 text-amber-500"/> Stock Check</h2>
+                                <button onClick={()=>setSupplyModal(false)} className="text-slate-500"><X className="w-6 h-6"/></button>
+                            </div>
+                            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
+                                {['All-purpose cleaner','Microfiber towels (10)','Vacuum + Mop','Glass cleaner','Trash bags','Supply of sponges','Gloves & Masks','Handyman Tool Kit'].map((item,i)=>(
+                                    <div key={i} className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/5">
+                                        <input type="checkbox" className="w-5 h-5 rounded-lg accent-amber-500" />
+                                        <span className="text-[10px] text-white font-black uppercase">{item}</span>
+                                    </div>
+                                ))}
+                            </div>
+                            <button onClick={()=>setSupplyModal(false)} className="w-full gold py-4 rounded-xl font-black uppercase shadow-xl">Everything Ready ✓</button>
                         </div>
                     </div>
                 )}
@@ -1640,7 +1725,8 @@ function App() {
                                     <input type="text" placeholder="PHONE NUMBER" value={state.phone} className="inp" onChange={e=>setState({...state,phone:e.target.value})}/>
                                     <input type="text" placeholder="FULL STREET ADDRESS" value={state.address} className="inp uppercase text-xs" onChange={e=>setState({...state,address:e.target.value})}/>
                                     <input type="text" placeholder="AUDIT PHOTOS LINK (optional)" value={state.audit_link} className="inp text-blue-400 text-xs" onChange={e=>setState({...state,audit_link:e.target.value})}/>
-                                    <textarea placeholder="INTERNAL NOTES..." value={state.notes} className="inp text-sm resize-none h-16" onChange={e=>setState({...state,notes:e.target.value})}/>
+                                    <textarea placeholder="INTERNAL NOTES (Admin only)..." value={state.notes} className="inp text-sm resize-none h-16" onChange={e=>setState({...state,notes:e.target.value})}/>
+                                    <textarea placeholder="CLIENT PULSE (Preferences for Staff)..." value={state.preferences} className="inp text-sm resize-none h-16 border-amber-500/30" onChange={e=>setState({...state,preferences:e.target.value})}/>
                                     <div className="grid grid-cols-3 gap-2">
                                         {['lead','scheduled','paid'].map(s=>(
                                             <button key={s} onClick={()=>setState({...state,status:s})} className={`py-3 rounded-xl text-[8px] uppercase font-black border-2 active:scale-95 ${state.status===s?'bg-amber-500 text-black border-amber-500 shadow-lg':'bg-white/5 border-white/5 text-slate-500'}`}>{s}</button>
