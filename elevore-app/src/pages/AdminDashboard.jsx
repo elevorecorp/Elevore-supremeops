@@ -342,9 +342,129 @@ function SupportView() {
     );
 }
 
-function ClientsView() { return <div className="g p-10 text-center text-slate-500 font-black italic uppercase">Clients CRM Module <br/> <span className="text-[8px] text-amber-500">Coming Soon</span></div>; }
-function MRRView() { return <div className="g p-10 text-center text-slate-500 font-black italic uppercase">MRR & Subscriptions <br/> <span className="text-[8px] text-amber-500">Coming Soon</span></div>; }
-function PayrollView() { return <div className="g p-10 text-center text-slate-500 font-black italic uppercase">Payroll Automation <br/> <span className="text-[8px] text-amber-500">Coming Soon</span></div>; }
-function MapView() { return <div className="g p-10 text-center text-slate-500 font-black italic uppercase">Strike Map (GPS) <br/> <span className="text-[8px] text-amber-500">Coming Soon</span></div>; }
-function DriveView() { return <div className="g p-10 text-center text-slate-500 font-black italic uppercase">Multimedia Drive <br/> <span className="text-[8px] text-amber-500">Coming Soon</span></div>; }
-function TeamView() { return <div className="g p-10 text-center text-slate-500 font-black italic uppercase">Team Management <br/> <span className="text-[8px] text-amber-500">Coming Soon</span></div>; }
+function ClientsView() {
+    const { clients, clientDNA, clientLevel, sendWA, isPrivate } = useElevore();
+    return (
+        <div className="space-y-4 animate-in fade-in duration-500 pb-24">
+            <div className="text-center py-4">
+                <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest">Client Database</p>
+                <h2 className="text-3xl font-black italic text-white uppercase leading-none">CRM <span className="text-purple-500">Core</span></h2>
+            </div>
+            {clients.map(c => {
+                const dna = clientDNA[c.name] || { score: 0, count: 0, spent: 0 };
+                const lvl = clientLevel(dna.count);
+                return (
+                    <div key={c.name} className="g p-5 flex justify-between items-center border-l-4" style={{ borderColor: lvl.color }}>
+                        <div>
+                            <h3 className="text-sm font-black text-white uppercase">{c.name}</h3>
+                            <div className="flex gap-2 mt-1">
+                                <span className="text-[7px] font-black px-2 py-0.5 rounded-full" style={{ background: lvl.color, color: '#000' }}>{lvl.name}</span>
+                                <p className="text-[8px] text-slate-500 font-black uppercase">{dna.count} Missions • {isPrivate ? '***' : fmt$(dna.spent)} spent</p>
+                            </div>
+                        </div>
+                        <button onClick={() => sendWA({client_name: c.name, client_phone: c.phone}, 'portal')} className="p-2 bg-white/5 rounded-xl text-purple-500 active:scale-90"><MessageCircle className="w-4 h-4"/></button>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
+function MRRView() {
+    const { mrr, isPrivate } = useElevore();
+    return (
+        <div className="space-y-6 animate-in zoom-in-95 pb-24">
+            <div className="text-center py-4">
+                <p className="text-[10px] font-black text-green-500 uppercase tracking-widest">Financial Matrix</p>
+                <h2 className="text-3xl font-black italic text-white uppercase leading-none">MRR <span className="text-green-500">Tracker</span></h2>
+            </div>
+            <div className="g p-8 border-t-4 border-green-500 text-center space-y-2 shadow-2xl relative overflow-hidden">
+                <div className="absolute -top-10 -right-10 w-32 h-32 bg-green-500/10 blur-3xl rounded-full"></div>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Monthly Recurring Revenue</p>
+                <h3 className="text-6xl font-black italic tracking-tighter text-white">{isPrivate ? '***' : fmt$(mrr.monthly)}</h3>
+                <p className="text-[8px] text-green-500 font-black uppercase">Projected Annual: {isPrivate ? '***' : fmt$(mrr.annual)}</p>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+                {Object.entries(mrr.plans).map(([name, count]) => (
+                    <div key={name} className="g p-4 text-center border-b-2 border-white/5">
+                        <p className="text-[7px] font-black text-slate-500 uppercase mb-1">{name}</p>
+                        <p className="text-xl font-black text-white">{count}</p>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function PayrollView() {
+    const { payrollSheet, isPrivate, showToast } = useElevore();
+    return (
+        <div className="space-y-4 animate-in slide-in-from-right-10 pb-24">
+            <div className="text-center py-4">
+                <p className="text-[10px] font-black text-yellow-500 uppercase tracking-widest">Operations Cost</p>
+                <h2 className="text-3xl font-black italic text-white uppercase leading-none">Team <span className="text-yellow-500">Payroll</span></h2>
+            </div>
+            {payrollSheet.map(team => (
+                <div key={team.name} className="g p-5 border-l-4 border-yellow-500 flex justify-between items-end">
+                    <div>
+                        <p className="text-[10px] font-black text-slate-500 uppercase mb-1">Team Unit</p>
+                        <h3 className="text-lg font-black text-white uppercase italic">{team.name}</h3>
+                        <p className="text-[8px] text-slate-600 font-black uppercase">{team.jobs} Missions Completed</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-[8px] font-black text-yellow-500 uppercase mb-1">Payment Due</p>
+                        <p className="text-2xl font-black italic text-white">{isPrivate ? '***' : fmt$(team.pay + (team.bonus || 0))}</p>
+                        <button onClick={() => showToast("Payment processed (Demo)", "green")} className="mt-2 text-[7px] font-black bg-white/10 px-2 py-1 rounded-full uppercase text-slate-400">Mark as Paid</button>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+function MapView() { return <div className="g p-10 text-center text-slate-500 font-black italic uppercase">Strike Map (GPS) <br/> <span className="text-[8px] text-amber-500">Live coordinates connecting...</span></div>; }
+
+function DriveView() {
+    const { jobs } = useElevore();
+    const allPhotos = jobs.reduce((acc, j) => [...acc, ...(j.before_photos || []), ...(j.after_photos || [])], []);
+    return (
+        <div className="space-y-4 pb-24">
+            <div className="text-center py-4">
+                <p className="text-[10px] font-black text-cyan-500 uppercase tracking-widest">Visual Assets</p>
+                <h2 className="text-3xl font-black italic text-white uppercase leading-none">Global <span className="text-cyan-500">Drive</span></h2>
+            </div>
+            <div className="grid grid-cols-3 gap-1">
+                {allPhotos.map((url, i) => (
+                    <div key={i} className="aspect-square bg-white/5 rounded-lg overflow-hidden border border-white/5">
+                        <img src={url} className="w-full h-full object-cover hover:scale-110 transition-all cursor-pointer" onClick={() => window.open(url, '_blank')} />
+                    </div>
+                ))}
+                {allPhotos.length === 0 && <p className="col-span-3 text-center py-20 text-slate-700 font-black italic uppercase text-[10px]">Cloud is empty.</p>}
+            </div>
+        </div>
+    );
+}
+
+function TeamView() {
+    const { staffList, showToast } = useElevore();
+    return (
+        <div className="space-y-4 pb-24">
+            <div className="text-center py-4">
+                <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Human Capital</p>
+                <h2 className="text-3xl font-black italic text-white uppercase leading-none">Elite <span className="text-amber-500">Staff</span></h2>
+            </div>
+            {staffList.map(s => (
+                <div key={s.id} className="g p-5 flex justify-between items-center border-l-4 border-amber-500">
+                    <div>
+                        <h3 className="text-sm font-black text-white uppercase">{s.name}</h3>
+                        <p className="text-[8px] text-slate-500 font-black uppercase">Access PIN: {s.pin}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="dot-g"></span>
+                        <p className="text-[8px] text-green-500 font-black uppercase">Active</p>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
