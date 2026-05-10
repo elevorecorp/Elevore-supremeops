@@ -438,9 +438,11 @@ function App() {
 
     const todayStr=new Date().toISOString().split('T')[0];
     const staffJobs=useMemo(()=>{
-        const sName = staffName || (pass === STAFF_PIN ? '' : pass);
+        const sName = staffName;
+        const isGeneric = pass === STAFF_PIN;
         return jobs.filter(j=>{
-            const isAssigned = j.team_assigned === sName || (pass === STAFF_PIN);
+            // Strict: must match name exactly, or be the generic 'staff' account
+            const isAssigned = (sName && j.team_assigned === sName) || isGeneric;
             const isToday = j.scheduled_date===todayStr || j.status==='scheduled' || j.status==='in_progress' || j.status==='lead';
             return isAssigned && isToday;
         });
@@ -849,7 +851,10 @@ function App() {
                     <div className="flex justify-between items-center pt-2">
                         <div>
                             <h1 className="text-2xl font-black uppercase italic text-white tracking-tighter">ELEVORE <span className="text-amber-500">STAFF</span></h1>
-                            <p className="text-[9px] text-slate-500 uppercase font-black">{staffTab === 'missions' ? todayStr : staffTab.toUpperCase()}</p>
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-1 h-1 bg-green-500 rounded-full animate-pulse"/>
+                                <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest">{staffName || 'GENERIC OPS'}</p>
+                            </div>
                         </div>
                         <button onClick={()=>sb.auth.signOut()} className="p-3 bg-white/5 border border-white/10 rounded-2xl text-slate-500 hover:text-white transition-all active:scale-95"><LogOut className="w-4 h-4" /></button>
                     </div>
