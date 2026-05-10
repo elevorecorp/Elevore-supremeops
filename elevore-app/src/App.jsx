@@ -46,7 +46,7 @@ const INITIAL = {
     beds:2,baths:2,living:1,laundryRoom:0,complexity:1,
     sqft:2000,oven:false,fridge:false,windows:false,pethair:false,garage:false,
     laundryLoads:0,expenses:0,deposit:0,discount:0,
-    frequency:'one-time',team:"",date:"",status:'lead',totalPrice:0,
+    frequency:'one-time',team:"",date:"",status:'scheduled',totalPrice:0,
     laborHours:2,materialCost:0,riskMargin:50,selectedQuickJobs:[],
     audit_link:"",notes:"",urgencyHours:24
 };
@@ -441,7 +441,7 @@ function App() {
         const sName = staffName || (pass === STAFF_PIN ? '' : pass);
         return jobs.filter(j=>{
             const isAssigned = j.team_assigned === sName || (pass === STAFF_PIN);
-            const isToday = j.scheduled_date===todayStr || j.status==='scheduled' || j.status==='in_progress';
+            const isToday = j.scheduled_date===todayStr || j.status==='scheduled' || j.status==='in_progress' || j.status==='lead';
             return isAssigned && isToday;
         });
     },[jobs,todayStr,staffName,pass]);
@@ -697,14 +697,20 @@ function App() {
                             }
                         }
                     }}/>
-                <button onClick={()=>{
+                <button onClick={async()=>{
+                    setLoading(true);
+                    // Re-fetch staff just in case
+                    const {data:s} = await sb.from('elevore_staff').select('*');
+                    const currentStaff = s || staffList;
+                    
                     if(pass===ADMIN_PIN){setView('brief');setRole('admin');}
                     else {
-                        const member = staffList.find(s=>s.pin === pass);
+                        const member = currentStaff.find(ss=>ss.pin === pass);
                         if(member){ setStaffName(member.name); setRole('staff'); setView('staff'); }
                         else if(pass===STAFF_PIN){ setRole('staff'); setView('staff'); }
-                        else showToast("Access Denied",'red');
+                        else showToast("Invalid PIN",'red');
                     }
+                    setLoading(false);
                 }} className="w-full gold py-4 rounded-xl font-black uppercase active:scale-95 shadow-xl">Unlock Matrix</button>
             </div>
         </div>
