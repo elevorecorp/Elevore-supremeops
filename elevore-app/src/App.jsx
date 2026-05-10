@@ -437,7 +437,14 @@ function App() {
     }),[jobs,filterSt,searchQ]);
 
     const todayStr=new Date().toISOString().split('T')[0];
-    const staffJobs=useMemo(()=>jobs.filter(j=>j.scheduled_date===todayStr||j.status==='scheduled'||j.status==='in_progress'),[jobs,todayStr]);
+    const staffJobs=useMemo(()=>{
+        const sName = staffName || (pass === STAFF_PIN ? '' : pass);
+        return jobs.filter(j=>{
+            const isAssigned = j.team_assigned === sName || (pass === STAFF_PIN);
+            const isToday = j.scheduled_date===todayStr || j.status==='scheduled' || j.status==='in_progress';
+            return isAssigned && isToday;
+        });
+    },[jobs,todayStr,staffName,pass]);
 
     // ── MRR (Membresías / Recurrentes) ────────────────────────
     const mrr=useMemo(()=>{
