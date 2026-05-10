@@ -211,9 +211,16 @@ function App() {
     },[]);
 
     useEffect(()=>{
+        // Fetch staff immediately so PINs work on first load
+        const init = async () => {
+            const {data} = await sb.from('elevore_staff').select('*').order('name');
+            if(data) setStaffList(data);
+        };
+        init();
+
         if(view==='portal'&&clientJobId) loadPortal();
         else if(view!=='auth') refresh();
-    },[view,refresh]);
+    },[view,refresh,clientJobId]);
 
     // ── SUPABASE REALTIME ─────────────────────────────────────
     useEffect(()=>{
@@ -438,11 +445,12 @@ function App() {
 
     const todayStr=new Date().toISOString().split('T')[0];
     const staffJobs=useMemo(()=>{
-        const sName = staffName;
+        const sName = staffName?.trim().toLowerCase();
         const isGeneric = pass === STAFF_PIN;
         return jobs.filter(j=>{
-            // Strict: must match name exactly, or be the generic 'staff' account
-            const isAssigned = (sName && j.team_assigned === sName) || isGeneric;
+            // Strict: must match name exactly (case-insensitive), or be the generic 'staff' account
+            const assignedTo = j.team_assigned?.trim().toLowerCase();
+            const isAssigned = (sName && assignedTo === sName) || isGeneric;
             const isToday = j.scheduled_date===todayStr || j.status==='scheduled' || j.status==='in_progress' || j.status==='lead';
             return isAssigned && isToday;
         });
@@ -472,12 +480,13 @@ function App() {
     const payrollSheet=useMemo(()=>{
         const teams={};
         jobs.filter(j=>j.team_assigned&&j.status==='paid').forEach(j=>{
-            const nm=j.team_assigned;
-            if(!teams[nm])teams[nm]={name:nm,jobs:0,gross:0,pay:0,bonus:0};
-            teams[nm].jobs++;
-            teams[nm].gross+=(j.deposit_paid||0);
-            teams[nm].pay+=Math.round((j.deposit_paid||0)*STAFF_PAY);
-            teams[nm].bonus+=calcBonus(j);
+            const nm = j.team_assigned.trim();
+            const key = nm.toLowerCase();
+            if(!teams[key])teams[key]={name:nm,jobs:0,gross:0,pay:0,bonus:0};
+            teams[key].jobs++;
+            teams[key].gross+=(j.deposit_paid||0);
+            teams[key].pay+=Math.round((j.deposit_paid||0)*STAFF_PAY);
+            teams[key].bonus+=calcBonus(j);
         });
         return Object.values(teams);
     },[jobs]);
@@ -687,41 +696,38 @@ function App() {
                     <p className="text-[8px] text-slate-500 uppercase tracking-widest mt-1">v95.0 — Built to Dominate</p>
                 </div>
                 <input type="password" placeholder="ACCESS PIN" className="inp text-center text-xl tracking-[0.5em]"
+                    value={pass}
                     onChange={e=>setPass(e.target.value)}
-                    onKeyDown={e=>{
-                        if(e.key==='Enter'){
-                            if(pass===ADMIN_PIN){setView('brief');setRole('admin');}
-                            else {
-                                const member = staffList.find(s=>s.pin === pass);
-                                if(member){ setStaffName(member.name); setRole('staff'); setView('staff'); }
-                                else if(pass===STAFF_PIN){ setRole('staff'); setView('staff'); }
-                                else showToast("Access Denied",'red');
-                            }
-                        }
+                    onKeyDown={async(e)=>{
+                        if(e.key==='Enter') await handleLogin();
                     }}/>
-                <button onClick={async()=>{
-                    setLoading(true);
-                    // Re-fetch staff just in case
-                    const {data:s} = await sb.from('elevore_staff').select('*');
-                    const currentStaff = s || staffList;
-                    
-                    if(pass===ADMIN_PIN){setView('brief');setRole('admin');}
-                    else {
-                        const member = currentStaff.find(ss=>ss.pin === pass);
-                        if(member){ setStaffName(member.name); setRole('staff'); setView('staff'); }
-                        else if(pass===STAFF_PIN){ setRole('staff'); setView('staff'); }
-                        else showToast("Invalid PIN",'red');
-                    }
-                    setLoading(false);
-                }} className="w-full gold py-4 rounded-xl font-black uppercase active:scale-95 shadow-xl">Unlock Matrix</button>
+                <button onClick={handleLogin} className="w-full gold py-4 rounded-xl font-black uppercase active:scale-95 shadow-xl">Unlock Matrix</button>
             </div>
         </div>
     );
 
+    async function handleLogin() {
+        setLoading(true);
+        // Always refresh staff on login attempt to ensure we have the latest
+        const {data:s} = await sb.from('elevore_staff').select('*');
+        const currentStaff = s || staffList;
+        if(s) setStaffList(s);
+        
+        if(pass===ADMIN_PIN){ setRole('admin'); setView('brief'); }
+        else {
+            const member = currentStaff.find(ss=>ss.pin === pass);
+            if(member){ setStaffName(member.name); setRole('staff'); setView('staff'); }
+            else if(pass===STAFF_PIN){ setStaffName(''); setRole('staff'); setView('staff'); }
+            else showToast("Invalid PIN",'red');
+        }
+        setLoading(false);
+    }
+
     // ── STAFF VIEW ───────────────────────────────────────────
     if(role==='staff'){
         const sName = staffName || pass;
-        const staffEarnings = payrollSheet.find(p => p.name === sName) || {gross:0, pay:0, bonus:0, jobs:0};
+        const lookup = sName.trim().toLowerCase();
+        const staffEarnings = payrollSheet.find(p => p.name.trim().toLowerCase() === lookup) || {gross:0, pay:0, bonus:0, jobs:0};
         
         if(activeStaff){
 
