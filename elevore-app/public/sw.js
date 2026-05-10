@@ -1,4 +1,4 @@
-const CACHE = 'elevore-v1';
+const CACHE = 'elevore-v2';
 const ASSETS = ['/', '/index.html'];
 
 self.addEventListener('install', e => {
