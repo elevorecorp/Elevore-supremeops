@@ -595,48 +595,87 @@ function App() {
         const sm={lead:10,scheduled:30,in_progress:65,completed:90,paid:100};
         const urgencyLeft=(job && job.urgency_expires)?Math.max(0,Math.round((new Date(job.urgency_expires)-Date.now())/3600000)):null;
 
-        const FullHistoryView = () => (
-            <div className="space-y-5 animate-in fade-in duration-500 pb-20">
-                <div className="g p-6 border-t-4 border-amber-500">
-                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Your Elevore History</p>
-                    <h2 className="text-2xl font-black italic text-white uppercase">{clientID?.replace(/_/g,' ')}</h2>
-                    <p className="text-[8px] text-slate-600 font-black uppercase mt-1">{myJobs.length} Missions completed/scheduled</p>
-                </div>
+        const FullHistoryView = () => {
+            const dnaScore = calcDNA(myJobs);
+            const level = clientLevel(myJobs.length);
+            const upcoming = myJobs.filter(j => j.status !== 'paid').sort((a,b)=>new Date(a.scheduled_date)-new Date(b.scheduled_date));
+            const nextJob = upcoming[0];
+            const past = myJobs.filter(j => j.status === 'paid');
 
-                <div className="space-y-3">
-                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Active & Upcoming</p>
-                    {myJobs.filter(j => j.status !== 'paid').map(j => (
-                        <button key={j.id} onClick={() => window.location.search = `?mision=${j.id}`} className="w-full g p-5 border-l-4 border-amber-500 flex justify-between items-center active:scale-95 transition-all">
-                            <div className="text-left">
-                                <p className="text-[10px] font-black text-white uppercase">{j.service_type}</p>
-                                <p className="text-[7px] text-slate-500 uppercase font-black">{fmtDate(j.scheduled_date)} • {j.status}</p>
+            return (
+                <div className="space-y-6 animate-in fade-in duration-700 pb-24">
+                    {/* Welcome & Loyalty Card */}
+                    <div className="g p-8 border-t-4 relative overflow-hidden shadow-2xl" style={{borderColor: level.color}}>
+                        <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full blur-[80px]" style={{background: level.color+'20'}}></div>
+                        <div className="relative z-10 flex justify-between items-start">
+                            <div>
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Premium Client</p>
+                                <h2 className="text-3xl font-black italic text-white uppercase leading-none">{clientID?.replace(/_/g,' ')}</h2>
+                                <div className="flex items-center gap-2 mt-3">
+                                    <span className="text-[8px] font-black px-3 py-1 rounded-full uppercase shadow-lg" style={{background: level.color, color: '#000'}}>{level.name} MEMBER</span>
+                                    <div className="h-1 w-12 bg-white/10 rounded-full overflow-hidden"><div className="h-full" style={{background: level.color, width: `${dnaScore}%`}}></div></div>
+                                </div>
+                            </div>
+                            <div className="dna border-2" style={{borderColor: level.color, color: level.color, width:50, height:50}}>
+                                <div className="text-center leading-none">
+                                    <div style={{fontSize:'0.6rem',fontWeight:900}}>{level.name.slice(0,3).toUpperCase()}</div>
+                                    <div style={{fontSize:'0.7rem',fontWeight:900}}>{dnaScore}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Next Mission Countdown */}
+                    {nextJob && (
+                        <div className="g p-6 bg-amber-500/5 border border-amber-500/20 flex items-center justify-between">
+                            <div>
+                                <p className="text-[8px] font-black text-amber-500 uppercase mb-1">Your Next Mission</p>
+                                <p className="text-sm font-black text-white uppercase">{nextJob.service_type}</p>
+                                <p className="text-[10px] text-slate-400 font-bold">{fmtDate(nextJob.scheduled_date)}</p>
                             </div>
                             <div className="text-right">
-                                <p className="text-sm font-black text-white">{fmt$(j.total_price)}</p>
-                                <p className="text-[6px] text-amber-500 font-black uppercase">View Track →</p>
+                                <p className="text-2xl font-black italic text-white leading-none">{daysAgo(nextJob.scheduled_date) <= 0 ? 'TODAY' : daysAgo(nextJob.scheduled_date)+'d'}</p>
+                                <p className="text-[7px] text-slate-500 font-black uppercase">Countdown</p>
                             </div>
-                        </button>
-                    ))}
-                    {myJobs.filter(j => j.status !== 'paid').length === 0 && <p className="text-[8px] text-slate-600 italic text-center">No active missions.</p>}
-                </div>
+                        </div>
+                    )}
 
-                <div className="space-y-3">
-                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Past Experiences</p>
-                    {myJobs.filter(j => j.status === 'paid').map(j => (
-                        <button key={j.id} onClick={() => window.location.search = `?mision=${j.id}`} className="w-full g p-5 opacity-70 flex justify-between items-center active:scale-95 transition-all">
-                            <div className="text-left">
-                                <p className="text-[10px] font-black text-white uppercase">{j.service_type}</p>
-                                <p className="text-[7px] text-slate-500 uppercase font-black">{fmtDate(j.scheduled_date)}</p>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-sm font-black text-green-500">PAID</p>
-                                <p className="text-[6px] text-slate-500 font-black uppercase">View Details →</p>
-                            </div>
+                    {/* Quick Actions */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <button onClick={()=>window.open(`https://wa.me/14079524228?text=${encodeURIComponent("Hi! I'd like to book a new mission.")}`)} className="g p-5 text-center space-y-2 hover:bg-white/5 active:scale-95 transition-all">
+                            <Zap className="w-5 h-5 mx-auto text-amber-500"/>
+                            <p className="text-[8px] font-black text-white uppercase">Book New</p>
                         </button>
-                    ))}
+                        <button onClick={()=>{const l=`${window.location.origin}${window.location.pathname}?ref=${clientID}`;navigator.clipboard?.writeText(l);showToast("Promo Link Copied! 🎁");}} className="g p-5 text-center space-y-2 hover:bg-white/5 active:scale-95 transition-all">
+                            <Users2 className="w-5 h-5 mx-auto text-blue-500"/>
+                            <p className="text-[8px] font-black text-white uppercase">Get $25 Off</p>
+                        </button>
+                    </div>
+
+                    {/* Mission Feed */}
+                    <div className="space-y-4">
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Mission Feed</p>
+                        {myJobs.sort((a,b)=>new Date(b.scheduled_date)-new Date(a.scheduled_date)).map(j => (
+                            <button key={j.id} onClick={() => window.location.search = `?mision=${j.id}`} className={`w-full g p-5 border-l-4 flex justify-between items-center active:scale-95 transition-all ${j.status==='paid'?'border-slate-800 opacity-60':'border-amber-500 shadow-xl'}`}>
+                                <div className="text-left flex items-center gap-4">
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${j.status==='paid'?'bg-slate-900 text-slate-600':'bg-amber-500/20 text-amber-500'}`}>
+                                        {j.service_type==='handyman'?<Package className="w-5 h-5"/>:<Sun className="w-5 h-5"/>}
+                                    </div>
+                                    <div>
+                                        <p className="text-[11px] font-black text-white uppercase">{j.service_type}</p>
+                                        <p className="text-[8px] text-slate-500 uppercase font-black">{fmtDate(j.scheduled_date)} • {j.status}</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-sm font-black text-white">{fmt$(j.total_price)}</p>
+                                    <p className={`text-[7px] font-black uppercase ${j.status==='paid'?'text-slate-600':'text-amber-500'}`}>View Mission →</p>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
                 </div>
-            </div>
-        );
+            );
+        };
 
         if(!job && clientID) return (
             <div className="min-h-screen p-5 bg-black">
