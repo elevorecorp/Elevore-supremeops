@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Play, Square, ArrowLeft, X, LogOut, Eye, EyeOff, FileText, Edit3, Trash2, MessageCircle, Sun, BarChart2, ShieldCheck, Users, Image as ImageIcon, Zap, Check, Star, Globe, DollarSign, MapPin, Users2, TrendingUp } from 'lucide-react';
+import { Play, Square, ArrowLeft, X, LogOut, Eye, EyeOff, FileText, Edit3, Trash2, MessageCircle, Sun, BarChart2, ShieldCheck, Users, Image as ImageIcon, Zap, Check, Star, Globe, DollarSign, MapPin, Users2, TrendingUp, Wallet, AlertTriangle, Package, ShieldAlert, CreditCard } from 'lucide-react';
 
 // ── i18n ─────────────────────────────────────────────────────
 const T={en:{hub:'Live Mission Hub',balance:'Balance Due',approve:'📝 Approve Your Quote',approveHint:'Sign below to confirm this service',approveBtn:'Sign to approve quote',complete:'🏁 Confirm Completion',completeHint:"Sign to confirm you're satisfied",completeBtn:'Sign to confirm completion',review:'⭐ Leave a Google Review',refer:'🎁 Refer a Friend — Both Get $25 Off',rate:'Rate Your Experience',chat:'Message Us Directly',chatBtn:'Send via WhatsApp',syncing:'Syncing...'},es:{hub:'Centro de Misión',balance:'Saldo Pendiente',approve:'📝 Aprueba Tu Cotización',approveHint:'Firma abajo para confirmar el servicio',approveBtn:'Firma para aprobar',complete:'🏁 Confirmar Finalización',completeHint:'Firma para confirmar que estás satisfecho',completeBtn:'Firma para confirmar',review:'⭐ Dejar Reseña en Google',refer:'🎁 Invita un Amigo — Ambos Obtienen $25 Off',rate:'Califica Tu Experiencia',chat:'Escríbenos Directamente',chatBtn:'Enviar por WhatsApp',syncing:'Cargando...'}};
@@ -184,6 +184,10 @@ function App() {
     const [activityLog,setActivityLog]=useState([]);
     const [lang,setLang]=useState('en');
     const [chatInput,setChatInput]=useState('');
+    const [staffTab,setStaffTab]=useState('missions');
+    const [reportModal,setReportModal]=useState(null);
+    const [reports,setReports]=useState([]);
+    const [reportDesc,setReportDesc]=useState('');
     const t=T[lang];
 
     const showToast=(msg,color='green')=>{ setToast({msg,color}); setTimeout(()=>setToast(null),3500); };
@@ -194,8 +198,10 @@ function App() {
         setLoading(true);
         const{data:j}=await sb.from('elevore_missions').select('*').order('created_at',{ascending:false});
         const{data:c}=await sb.from('clients').select('*');
+        const{data:r}=await sb.from('elevore_reports').select('*').order('created_at',{ascending:false});
         if(j) setJobs(j);
         if(c) setClients(c);
+        if(r) setReports(r);
         setLoading(false);
         
     },[]);
@@ -211,6 +217,7 @@ function App() {
         const ch=sb.channel('elevore-live')
             .on('postgres_changes',{event:'*',schema:'public',table:'elevore_missions'},()=>refresh())
             .on('postgres_changes',{event:'*',schema:'public',table:'clients'},()=>refresh())
+            .on('postgres_changes',{event:'*',schema:'public',table:'elevore_reports'},()=>refresh())
             .subscribe();
         return ()=>sb.removeChannel(ch);
     },[view,refresh]);
@@ -673,81 +680,294 @@ function App() {
 
     // ── STAFF VIEW ───────────────────────────────────────────
     if(role==='staff'){
+        const staffEarnings = payrollSheet.find(p => p.name === pass) || {gross:0, pay:0, bonus:0, jobs:0};
+        
         if(activeStaff){
+
             const StaffJob=()=>{
                 const[checked,setChecked]=useState({});
+                const[showAudit,setShowAudit]=useState(false);
                 const done=Object.values(checked).filter(Boolean).length;
                 const job=activeStaff;
                 const bonus=calcBonus(job);
                 const addAfterPhoto=async(url)=>{const c=job.after_photos||[];await sb.from('elevore_missions').update({after_photos:[...c,url]}).eq('id',job.id);showToast("Photo added ✓");setActiveStaff({...job,after_photos:[...c,url]});};
+                
                 return(
-                    <div className="min-h-screen p-5 bg-black pb-24">
+                    <div className="min-h-screen p-5 bg-black pb-32">
                         {toast&&<div className={`toast fixed top-5 left-1/2 -translate-x-1/2 z-[500] px-6 py-3 rounded-2xl font-black uppercase text-sm shadow-2xl ${toast.color==='red'?'bg-red-600':'bg-green-600'} text-white`}>{toast.msg}</div>}
-                        <button onClick={()=>setActiveStaff(null)} className="mb-5 flex items-center gap-2 text-slate-500 font-black uppercase text-[9px]"><ArrowLeft className="w-4 h-4" /> Back</button>
+                        <button onClick={()=>setActiveStaff(null)} className="mb-5 flex items-center gap-2 text-slate-500 font-black uppercase text-[9px]"><ArrowLeft className="w-4 h-4" /> Back to List</button>
+                        
                         <div className="max-w-md mx-auto space-y-5">
-                            <div className="g p-6 border-t-4 border-green-500">
-                                <h2 className="text-xl font-black uppercase italic text-white mb-1">{job.client_name}</h2>
-                                <p className="text-[9px] text-slate-500 uppercase font-black">{job.service_type} • {job.address}</p>
-                                <div className="flex gap-2 mt-4">
-                                    <button onClick={()=>recordTime(job.id,'check_in_time')} className="flex-1 bg-green-600 text-white py-3 rounded-xl font-black uppercase text-[9px] active:scale-95 flex items-center justify-center gap-1"><Play className="w-3 h-3" /> Check In</button>
+                            {/* Mission Header */}
+                            <div className="g p-6 border-t-4 border-green-500 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-4 opacity-10"><Zap className="w-20 h-20 text-white" /></div>
+                                <h2 className="text-xl font-black uppercase italic text-white mb-1 relative z-10">{job.client_name}</h2>
+                                <p className="text-[9px] text-slate-500 uppercase font-black mb-4">{job.service_type} • {job.address}</p>
+                                <div className="flex gap-2">
+                                    <button onClick={()=>recordTime(job.id,'check_in_time')} className="flex-1 bg-green-600 text-white py-3 rounded-xl font-black uppercase text-[9px] active:scale-95 flex items-center justify-center gap-1 shadow-lg shadow-green-900/20"><Play className="w-3 h-3" /> Check In</button>
                                     <button onClick={()=>recordTime(job.id,'check_out_time')} className="flex-1 bg-red-600 text-white py-3 rounded-xl font-black uppercase text-[9px] active:scale-95 flex items-center justify-center gap-1"><Square className="w-3 h-3" /> Check Out</button>
                                     <button onClick={()=>window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.address)}`)} className="bg-blue-600 text-white px-4 py-3 rounded-xl font-black text-[9px] active:scale-95">📍</button>
                                 </div>
-                                {job.check_in_time&&<p className="text-[8px] text-green-400 font-black uppercase mt-2">▶ In: {new Date(job.check_in_time).toLocaleTimeString()}</p>}
+                                {job.check_in_time&&<p className="text-[8px] text-green-400 font-black uppercase mt-3 flex items-center gap-1"><div className="dot-g"/> Session Active: {new Date(job.check_in_time).toLocaleTimeString()}</p>}
                             </div>
+
+                            {/* SPECIAL INSTRUCTIONS */}
+                            <div className="g p-5 border-l-4 border-amber-500 space-y-3">
+                                <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest flex items-center gap-2"><ShieldAlert className="w-3 h-3"/> Special Instructions</p>
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/5">
+                                        <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center"><Users2 className="w-4 h-4 text-amber-400"/></div>
+                                        <div><p className="text-[8px] text-slate-500 uppercase font-black">Pets</p><p className="text-[10px] text-white font-black">{job.specs?.pets || 'None reported'}</p></div>
+                                    </div>
+                                    <div className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/5">
+                                        <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center"><ShieldCheck className="w-4 h-4 text-blue-400"/></div>
+                                        <div><p className="text-[8px] text-slate-500 uppercase font-black">Access</p><p className="text-[10px] text-white font-black">{job.specs?.access_code || 'Doorbell / Knock'}</p></div>
+                                    </div>
+                                    {job.notes && (
+                                        <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                                            <p className="text-[8px] text-slate-500 uppercase font-black mb-1">Admin Notes</p>
+                                            <p className="text-[10px] text-white font-black italic">"{job.notes}"</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
                             {/* UPSELL STRIKE */}
                             <div className="g p-5">
-                                <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest mb-3">⚡ Upsell Strike</p>
+                                <p className="text-[9px] font-black text-green-500 uppercase tracking-widest mb-3 flex items-center gap-2"><TrendingUp className="w-3 h-3"/> Neural Upsell</p>
                                 <div className="grid grid-cols-2 gap-2">
                                     {ADDONS.filter(a=>!job.specs?.[a.id]).map(a=>{
                                         const sent=(job.upsell_sent||[]).includes(a.id);
-                                        return(<button key={a.id} disabled={sent} onClick={()=>sendUpsell(job,a.id)} className={`p-3 rounded-xl border text-[8px] font-black uppercase active:scale-95 ${sent?'bg-green-900/30 border-green-600/30 text-green-600':'bg-amber-500/10 border-amber-500/30 text-amber-400'}`}>{sent?'✅ Sent':''}{a.label} ${a.p}</button>);
+                                        return(<button key={a.id} disabled={sent} onClick={()=>sendUpsell(job,a.id)} className={`p-3 rounded-xl border text-[8px] font-black uppercase active:scale-95 transition-all ${sent?'bg-green-900/30 border-green-600/30 text-green-600':'bg-white/5 border-white/10 text-slate-400 hover:border-green-500'}`}>{sent?'✅ Sent':''}{a.label} +${a.p}</button>);
                                     })}
                                 </div>
                             </div>
+
                             {/* CHECKLIST */}
                             <div className="g p-5 space-y-2">
-                                <div className="flex justify-between items-center mb-2"><p className="text-[9px] font-black uppercase text-amber-500">Checklist</p><span className="text-[9px] font-black text-white">{done}/{CHECKLIST.length}</span></div>
+                                <div className="flex justify-between items-center mb-2"><p className="text-[9px] font-black uppercase text-slate-400">Mission Checklist</p><span className="text-[9px] font-black text-white">{done}/{CHECKLIST.length}</span></div>
                                 <div className="pb mb-3"><div className="pf" style={{width:`${(done/CHECKLIST.length)*100}%`}}></div></div>
                                 {CHECKLIST.map((item,i)=>(
-                                    <button key={i} onClick={()=>setChecked(c=>({...c,[i]:!c[i]}))} className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all active:scale-95 ${checked[i]?'bg-green-600/20 border-green-600/40 text-green-400':'bg-white/5 border-white/5 text-slate-400'}`}>
-                                        <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center flex-shrink-0 ${checked[i]?'bg-green-600 border-green-600':'border-slate-600'}`}>{checked[i]&&<Check className="w-3 h-3 text-white" />}</div>
+                                    <button key={i} onClick={()=>setChecked(c=>({...c,[i]:!c[i]}))} className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all active:scale-95 ${checked[i]?'bg-green-600/10 border-green-600/40 text-green-400':'bg-white/5 border-white/5 text-slate-400'}`}>
+                                        <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center flex-shrink-0 ${checked[i]?'bg-green-600 border-green-600':'border-slate-700'}`}>{checked[i]&&<Check className="w-3 h-3 text-white" />}</div>
                                         <span className="text-[10px] font-black uppercase text-left">{item}</span>
                                     </button>
                                 ))}
                             </div>
-                            {/* AFTER PHOTOS */}
-                            <div className="g p-5"><PhotoDrive photos={job.after_photos||[]} label="✨ After Photos" onAdd={addAfterPhoto}/></div>
-                            {/* BONUS */}
-                            {bonus>0&&<div className="g p-5 border border-amber-500/30 text-center"><p className="text-amber-500 font-black uppercase text-[9px] mb-1">🌟 Bonus Earned</p><p className="text-3xl font-black italic text-white">+${bonus}</p><p className="text-[8px] text-slate-500 italic mt-1">On-time + client signed ✓</p></div>}
-                            {done===CHECKLIST.length&&(
-                                <button onClick={async()=>{await sb.from('elevore_missions').update({status:'completed'}).eq('id',job.id);showToast("Job complete! ✅");setActiveStaff(null);refresh();}} className="w-full gold py-5 rounded-2xl font-black uppercase text-base active:scale-95 transition-all shadow-xl">✅ Mark Job Complete</button>
+
+                            {/* PHOTOS */}
+                            <div className="g p-5"><PhotoDrive photos={job.after_photos||[]} label="✨ Proof of Quality (After Photos)" onAdd={addAfterPhoto}/></div>
+
+                            {/* INCIDENT REPORT BUTTON */}
+                            <button onClick={()=>setReportModal({type:'incident', jobId: job.id})} className="w-full bg-red-600/10 border border-red-600/30 text-red-500 py-3 rounded-xl font-black uppercase text-[9px] active:scale-95 flex items-center justify-center gap-2">
+                                <AlertTriangle className="w-4 h-4"/> Report Issue or Damage
+                            </button>
+
+                            {/* FINISH MISSION */}
+                            {done===CHECKLIST.length && (
+                                <button onClick={()=>setShowAudit(true)} className="w-full gold py-5 rounded-2xl font-black uppercase text-base active:scale-95 transition-all shadow-xl shadow-amber-900/20">✅ Complete Mission</button>
                             )}
                         </div>
+
+                        {/* SELF-AUDIT MODAL */}
+                        {showAudit && (
+                            <div className="fixed inset-0 bg-black/95 z-[600] flex items-center justify-center p-6 animate-in fade-in zoom-in duration-300">
+                                <div className="g p-8 w-full max-w-sm space-y-6 text-center border-t-4 border-green-500">
+                                    <div className="w-16 h-16 bg-green-500 rounded-full mx-auto flex items-center justify-center text-black font-black text-2xl shadow-lg shadow-green-500/20">✓</div>
+                                    <div>
+                                        <h2 className="text-xl font-black uppercase italic text-white">Final Audit</h2>
+                                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-2">Before we leave the mission...</p>
+                                    </div>
+                                    <div className="text-left space-y-3">
+                                        {['Lights off?','Windows locked?','Key returned?','No supplies left?'].map((q,i)=>(
+                                            <div key={i} className="flex items-center gap-3 text-white font-black uppercase text-[10px] bg-white/5 p-3 rounded-lg"><div className="w-2 h-2 bg-green-500 rounded-full shadow-lg shadow-green-500/50"/> {q}</div>
+                                        ))}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button onClick={()=>setShowAudit(false)} className="flex-1 py-4 rounded-xl bg-white/10 text-slate-400 font-black uppercase text-[10px] active:scale-95">Cancel</button>
+                                        <button onClick={async()=>{
+                                            await sb.from('elevore_missions').update({status:'completed'}).eq('id',job.id);
+                                            showToast("Mission objective secured! ✅");
+                                            setActiveStaff(null); refresh();
+                                        }} className="flex-2 gold py-4 px-6 rounded-xl font-black uppercase text-[10px] active:scale-95">Yes, Exit Mission</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 );
             };
             return <StaffJob/>;
         }
+
         return(
-            <div className="min-h-screen p-5 bg-black pb-20">
+            <div className="min-h-screen p-5 bg-black pb-24">
                 {toast&&<div className={`toast fixed top-5 left-1/2 -translate-x-1/2 z-[500] px-6 py-3 rounded-2xl font-black uppercase text-sm shadow-2xl ${toast.color==='red'?'bg-red-600':'bg-green-600'} text-white`}>{toast.msg}</div>}
                 {loading&&<div className="fixed inset-0 bg-black/80 z-[300] flex items-center justify-center"><div className="w-14 h-14 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div></div>}
-                <div className="max-w-md mx-auto space-y-5">
+                
+                <div className="max-w-md mx-auto space-y-6">
+                    {/* Header */}
                     <div className="flex justify-between items-center pt-2">
-                        <div><h1 className="text-xl font-black uppercase italic text-white">Today's Missions</h1><p className="text-[9px] text-slate-500 uppercase font-black">{todayStr}</p></div>
-                        <button onClick={()=>sb.auth.signOut()} className="p-3 bg-slate-900 rounded-xl text-slate-500 hover:text-white transition-all"><LogOut className="w-4 h-4" /></button>
+                        <div>
+                            <h1 className="text-2xl font-black uppercase italic text-white tracking-tighter">ELEVORE <span className="text-amber-500">STAFF</span></h1>
+                            <p className="text-[9px] text-slate-500 uppercase font-black">{staffTab === 'missions' ? todayStr : staffTab.toUpperCase()}</p>
+                        </div>
+                        <button onClick={()=>sb.auth.signOut()} className="p-3 bg-white/5 border border-white/10 rounded-2xl text-slate-500 hover:text-white transition-all active:scale-95"><LogOut className="w-4 h-4" /></button>
                     </div>
-                    {staffJobs.length===0&&<div className="g p-10 text-center text-slate-500 font-black italic uppercase">No missions today.</div>}
-                    {staffJobs.map(job=>(
-                        <button key={job.id} onClick={()=>setActiveStaff(job)} className="w-full g p-5 border-l-[7px] border-amber-500 text-left active:scale-95 transition-all">
-                            <div className="flex justify-between items-start">
-                                <div><h3 className="text-lg font-black uppercase italic text-white">{job.client_name}</h3><p className="text-[9px] text-slate-500 uppercase mt-1">{job.service_type} • {fmtDate(job.scheduled_date)}</p><p className="text-[9px] text-slate-400 mt-1 italic truncate w-48">{job.address}</p></div>
-                                <span className={`text-[7px] font-black px-2 py-1 rounded-full uppercase ml-2 flex-shrink-0 ${job.status==='in_progress'?'bg-green-600 text-white':job.status==='completed'?'bg-purple-600 text-white':'bg-amber-500 text-black'}`}>{job.status}</span>
-                            </div>
-                            <p className="text-[8px] font-black text-amber-500 uppercase mt-3 text-right">Tap to start →</p>
+
+                    {/* STAFF TABS */}
+                    <div className="flex gap-1 bg-white/5 p-1 rounded-2xl border border-white/5">
+                        <button onClick={()=>setStaffTab('missions')} className={`flex-1 flex flex-col items-center py-3 rounded-xl transition-all ${staffTab==='missions'?'bg-white/10 text-white shadow-lg':'text-slate-500'}`}>
+                            <Zap className="w-4 h-4 mb-1" />
+                            <span className="text-[7px] font-black uppercase">Missions</span>
                         </button>
-                    ))}
+                        <button onClick={()=>setStaffTab('earnings')} className={`flex-1 flex flex-col items-center py-3 rounded-xl transition-all ${staffTab==='earnings'?'bg-white/10 text-white shadow-lg':'text-slate-500'}`}>
+                            <Wallet className="w-4 h-4 mb-1" />
+                            <span className="text-[7px] font-black uppercase">Earnings</span>
+                        </button>
+                        <button onClick={()=>setStaffTab('incidents')} className={`flex-1 flex flex-col items-center py-3 rounded-xl transition-all ${staffTab==='incidents'?'bg-white/10 text-white shadow-lg':'text-slate-500'}`}>
+                            <AlertTriangle className="w-4 h-4 mb-1" />
+                            <span className="text-[7px] font-black uppercase">Support</span>
+                        </button>
+                    </div>
+
+                    {/* MISSIONS VIEW */}
+                    {staffTab==='missions' && (
+                        <div className="space-y-4">
+                            {staffJobs.length===0&&<div className="g p-10 text-center text-slate-500 font-black italic uppercase text-xs border-dashed border-white/10">No missions assigned for today.</div>}
+                            {staffJobs.map(job=>(
+                                <button key={job.id} onClick={()=>setActiveStaff(job)} className="w-full g p-5 border-l-[6px] border-amber-500 text-left active:scale-95 transition-all group relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform"><Zap className="w-16 h-16 text-white"/></div>
+                                    <div className="flex justify-between items-start mb-1">
+                                        <div>
+                                            <h3 className="text-lg font-black uppercase italic text-white leading-none mb-1">{job.client_name}</h3>
+                                            <p className="text-[8px] text-slate-500 uppercase font-black">{job.service_type}</p>
+                                        </div>
+                                        <span className={`text-[7px] font-black px-2.5 py-1 rounded-xl uppercase flex items-center gap-1 ${job.status==='in_progress'?'bg-green-600 text-white':job.status==='completed'?'bg-purple-600 text-white':'bg-amber-500 text-black'}`}>
+                                            {job.status==='in_progress'&&<div className="w-1 h-1 bg-white rounded-full animate-ping"/>} {job.status}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 mt-3 text-slate-400">
+                                        <MapPin className="w-3 h-3 text-slate-600" />
+                                        <p className="text-[8px] font-black uppercase truncate w-full">{job.address}</p>
+                                    </div>
+                                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-white/5">
+                                        <div className="flex gap-2">
+                                            {job.specs?.pets && <div className="px-2 py-1 bg-amber-500/10 rounded text-[6px] font-black text-amber-500 uppercase">🐾 Pets</div>}
+                                            {job.specs?.access_code && <div className="px-2 py-1 bg-blue-500/10 rounded text-[6px] font-black text-blue-500 uppercase">🔑 Access</div>}
+                                        </div>
+                                        <p className="text-[8px] font-black text-white uppercase italic">Mission Details →</p>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* EARNINGS VIEW */}
+                    {staffTab==='earnings' && (
+                        <div className="space-y-5 animate-in slide-in-from-bottom-5 duration-500">
+                            <div className="g p-8 text-center space-y-2 border-t-4 border-green-500 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-4 opacity-10"><DollarSign className="w-20 h-20 text-white"/></div>
+                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest relative z-10">Available Earnings</p>
+                                <h2 className="text-6xl font-black italic text-white tracking-tighter relative z-10">{fmt$(staffEarnings.pay)}</h2>
+                                <p className="text-[8px] text-green-500 font-black uppercase pt-2">Includes base pay for {staffEarnings.jobs} missions</p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="g p-5 text-center">
+                                    <p className="text-[8px] text-slate-500 font-black uppercase mb-1">Bonuses Earned</p>
+                                    <p className="text-2xl font-black italic text-amber-500">{fmt$(staffEarnings.bonus)}</p>
+                                </div>
+                                <div className="g p-5 text-center">
+                                    <p className="text-[8px] text-slate-500 font-black uppercase mb-1">Jobs Completed</p>
+                                    <p className="text-2xl font-black italic text-white">{staffEarnings.jobs}</p>
+                                </div>
+                            </div>
+                            <div className="g p-6 space-y-4">
+                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2"><CreditCard className="w-4 h-4"/> Payment Schedule</p>
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/5">
+                                        <span className="text-[9px] text-white font-black uppercase">Next Payout</span>
+                                        <span className="text-[9px] text-slate-400 font-black uppercase italic">Friday, May 15</span>
+                                    </div>
+                                    <p className="text-[8px] text-slate-600 italic text-center uppercase font-bold">Payments are processed automatically via Zelle/Bank Transfer</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* SUPPORT VIEW */}
+                    {staffTab==='incidents' && (
+                        <div className="space-y-5 animate-in slide-in-from-bottom-5 duration-500">
+                            <div className="g p-6 space-y-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-red-600/20 rounded-2xl flex items-center justify-center text-red-500 shadow-lg shadow-red-900/20"><AlertTriangle className="w-6 h-6"/></div>
+                                    <div><h2 className="text-lg font-black uppercase italic text-white">Ops Support</h2><p className="text-[8px] text-slate-500 uppercase font-black">Report field issues instantly</p></div>
+                                </div>
+                                <div className="grid gap-3">
+                                    <button onClick={()=>setReportModal({type:'incident'})} className="w-full g p-4 text-left flex items-center justify-between border-l-4 border-red-600 hover:bg-white/5 active:scale-95 transition-all">
+                                        <div><p className="text-[10px] text-white font-black uppercase">Report Damage</p><p className="text-[8px] text-slate-500 font-black uppercase mt-1">Document pre-existing or new damage</p></div>
+                                        <ArrowLeft className="w-4 h-4 rotate-180 text-slate-600" />
+                                    </button>
+                                    <button onClick={()=>setReportModal({type:'supply'})} className="w-full g p-4 text-left flex items-center justify-between border-l-4 border-amber-500 hover:bg-white/5 active:scale-95 transition-all">
+                                        <div><p className="text-[10px] text-white font-black uppercase">Low Supplies</p><p className="text-[8px] text-slate-500 font-black uppercase mt-1">Request materials for next shift</p></div>
+                                        <ArrowLeft className="w-4 h-4 rotate-180 text-slate-600" />
+                                    </button>
+                                    <button onClick={()=>window.open('https://wa.me/14079524228','_blank')} className="w-full g p-4 text-left flex items-center justify-between border-l-4 border-green-500 hover:bg-white/5 active:scale-95 transition-all">
+                                        <div><p className="text-[10px] text-white font-black uppercase">Direct Admin Line</p><p className="text-[8px] text-slate-500 font-black uppercase mt-1">WhatsApp chat with Ops Manager</p></div>
+                                        <ArrowLeft className="w-4 h-4 rotate-180 text-slate-600" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* MODALS */}
+                {reportModal && (
+                    <div className="fixed inset-0 bg-black/95 z-[600] flex items-end justify-center p-6 animate-in slide-in-from-bottom duration-300">
+                        <div className="g p-8 w-full max-w-sm space-y-6 border-t-4 border-red-600">
+                            <div className="flex justify-between items-center">
+                                <h2 className="text-xl font-black uppercase italic text-white">{reportModal.type === 'incident' ? 'Report Damage' : 'Supply Request'}</h2>
+                                <button onClick={()=>{setReportModal(null);setReportDesc('');}} className="text-slate-500"><X className="w-6 h-6"/></button>
+                            </div>
+                            <div className="space-y-4">
+                                <div><p className="text-[9px] font-black text-slate-500 uppercase mb-2">Description</p><textarea className="inp text-xs h-24 uppercase" placeholder="Explain the situation clearly..." value={reportDesc} onChange={e=>setReportDesc(e.target.value)}/></div>
+                                <div><p className="text-[9px] font-black text-slate-500 uppercase mb-2">Proof (Optional)</p><div className="g p-4 border-dashed border-white/10 text-center"><p className="text-[8px] text-slate-600 font-black italic">Click to upload photo</p></div></div>
+                                <button onClick={async()=>{
+                                    setLoading(true);
+                                    const {error} = await sb.from('elevore_reports').insert({
+                                        type: reportModal.type,
+                                        description: reportDesc,
+                                        staff_name: pass,
+                                        job_id: reportModal.jobId || null,
+                                        status: 'open'
+                                    });
+                                    setLoading(false);
+                                    if(!error) {
+                                        showToast("Report submitted successfully! ✓");
+                                        setReportModal(null);
+                                        setReportDesc('');
+                                        refresh();
+                                    } else {
+                                        showToast("Error sending report",'red');
+                                    }
+                                }} className="w-full gold py-4 rounded-xl font-black uppercase active:scale-95">Send Report</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* BOTTOM TAB BAR (Staff) */}
+                <div className="fixed bottom-6 left-6 right-6 z-[400] flex gap-2 bg-black/60 backdrop-blur-xl p-2 rounded-3xl border border-white/10 shadow-2xl">
+                    <button onClick={()=>setStaffTab('missions')} className={`flex-1 flex flex-col items-center py-2 rounded-2xl transition-all ${staffTab==='missions'?'bg-amber-500 text-black shadow-lg':'text-slate-500'}`}>
+                        <Zap className="w-4 h-4" /><span className="text-[6px] font-black uppercase mt-1">Ops</span>
+                    </button>
+                    <button onClick={()=>setStaffTab('earnings')} className={`flex-1 flex flex-col items-center py-2 rounded-2xl transition-all ${staffTab==='earnings'?'bg-amber-500 text-black shadow-lg':'text-slate-500'}`}>
+                        <Wallet className="w-4 h-4" /><span className="text-[6px] font-black uppercase mt-1">Bank</span>
+                    </button>
+                    <button onClick={()=>setStaffTab('incidents')} className={`flex-1 flex flex-col items-center py-2 rounded-2xl transition-all ${staffTab==='incidents'?'bg-amber-500 text-black shadow-lg':'text-slate-500'}`}>
+                        <AlertTriangle className="w-4 h-4" /><span className="text-[6px] font-black uppercase mt-1">Help</span>
+                    </button>
                 </div>
             </div>
         );
@@ -903,7 +1123,7 @@ function App() {
             <main className="max-w-xl mx-auto w-full p-4 space-y-5">
                 {/* NAV */}
                 <div className="flex gap-1 bg-black/40 p-1.5 rounded-2xl border border-white/5 shadow-xl overflow-x-auto no-sb">
-                    {[['brief','☀️','Brief'],['intel','📊','Intel'],['agenda','📋','Logs'],['clients','🧬','DNA'],['mrr','💳','MRR'],['payroll','💵','Pay'],['map','📍','Map'],['drive','📁','Drive'],['deploy','⚡','New']].map(([v,e,l])=>(
+                    {[['brief','☀️','Brief'],['intel','📊','Intel'],['agenda','📋','Logs'],['clients','🧬','DNA'],['mrr','💳','MRR'],['payroll','💵','Pay'],['support','🚨','Support'],['map','📍','Map'],['deploy','⚡','New']].map(([v,e,l])=>(
                         <button key={v} onClick={()=>{if(v==='deploy'){setEditId(null);setState(INITIAL);setDeployTab('identity');}setView(v);}}
                             className={`flex-shrink-0 flex-1 py-2.5 rounded-xl text-[8px] uppercase font-black transition-all whitespace-nowrap px-2 ${view===v?(v==='deploy'?'bg-amber-500 text-black shadow-lg':'tab-on'):'text-slate-500'}`}>{e} {l}</button>
                     ))}
@@ -1243,6 +1463,43 @@ function App() {
                                 ))}
                             </div>
                         )}
+                    </div>
+                )}
+
+                {/* ── SUPPORT ── */}
+                {view==='support'&&(
+                    <div className="space-y-4 animate-in fade-in pb-24">
+                        <div className="g p-5 border-t-4 border-red-600">
+                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">🚨 Field Support Alerts</p>
+                            <p className="text-[8px] text-slate-600 font-black italic">Manage incidents and supply requests from staff</p>
+                        </div>
+                        {reports.length===0&&<div className="g p-10 text-center text-slate-500 font-black italic uppercase">No active reports.</div>}
+                        {reports.map(rep=>(
+                            <div key={rep.id} className={`g p-5 border-l-4 ${rep.status==='open'?'border-red-600':'border-slate-700 opacity-60'}`}>
+                                <div className="flex justify-between items-start mb-2">
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-[7px] font-black px-2 py-0.5 rounded-full uppercase ${rep.type==='incident'?'bg-red-600 text-white':'bg-amber-500 text-black'}`}>{rep.type}</span>
+                                            <span className="text-[7px] text-slate-500 font-black uppercase">{new Date(rep.created_at).toLocaleString()}</span>
+                                        </div>
+                                        <p className="text-[10px] font-black text-white uppercase mt-2">From: {rep.staff_name}</p>
+                                    </div>
+                                    {rep.status==='open' && (
+                                        <button onClick={async()=>{
+                                            await sb.from('elevore_reports').update({status:'resolved'}).eq('id',rep.id);
+                                            showToast("Report resolved ✓");
+                                            refresh();
+                                        }} className="px-3 py-1.5 bg-green-600/20 text-green-400 rounded-xl text-[7px] font-black uppercase active:scale-95">Resolve</button>
+                                    )}
+                                </div>
+                                <div className="bg-black/40 p-3 rounded-xl">
+                                    <p className="text-[10px] text-slate-300 font-black italic">"{rep.description}"</p>
+                                </div>
+                                {rep.job_id && (
+                                    <p className="text-[7px] text-slate-500 font-black uppercase mt-2">Related to Mission: {jobs.find(j=>j.id===rep.job_id)?.client_name || 'Unknown'}</p>
+                                )}
+                            </div>
+                        ))}
                     </div>
                 )}
 
