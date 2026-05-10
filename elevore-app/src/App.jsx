@@ -604,10 +604,12 @@ function App() {
                         </button>
                     </div>
                     {/* Header */}
-                    <div className="text-center space-y-2">
-                        <div className="w-16 h-16 bg-white rounded-2xl mx-auto flex items-center justify-center font-black text-black text-2xl italic shadow-xl">E</div>
-                        <h1 className="text-xl font-black uppercase tracking-[0.3em] text-white">ELEVORE</h1>
-                        <p className="text-[9px] text-green-500 font-bold uppercase tracking-[0.4em]">{t.hub}</p>
+                    <div className="text-center space-y-4 py-4">
+                        <div className="w-20 h-20 bg-white rounded-[2rem] mx-auto flex items-center justify-center font-black text-black text-3xl italic shadow-2xl shadow-amber-500/20 border-4 border-amber-500/10">E</div>
+                        <div>
+                            <h1 className="text-2xl font-black uppercase tracking-[0.4em] text-white leading-none">ELEVORE</h1>
+                            <p className="text-[10px] text-amber-500 font-black uppercase tracking-[0.3em] mt-1">{t.hub}</p>
+                        </div>
                     </div>
                     {/* Urgency banner */}
                     {urgencyLeft!==null&&urgencyLeft>0&&!job.approval_signature&&(
@@ -634,12 +636,35 @@ function App() {
                             <div className="pb"><div className="pf" style={{width:`${sm[job.status]||0}%`}}></div></div>
                         </div>
                     </div>
-                    {/* Balance */}
-                    <div className="g p-6 text-center space-y-2">
-                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{t.balance}</p>
-                        <h3 className="text-6xl font-black italic tracking-tighter text-white">{fmt$(bal)}</h3>
-                        <p className="text-[9px] text-green-500 font-black uppercase pt-2">{t.zelle}</p>
+                    {/* Balance & Payment */}
+                    <div className="g p-8 text-center space-y-4 border-t-4 border-amber-500 shadow-2xl relative overflow-hidden">
+                        <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl"></div>
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{t.balance}</p>
+                        <h3 className="text-7xl font-black italic tracking-tighter text-white leading-none">{fmt$(bal)}</h3>
+                        <div className="pt-2">
+                            <button onClick={()=>{showToast("Redirecting to Secure Payment...", "amber"); setTimeout(()=>window.open(`https://buy.stripe.com/test_placeholder?client=${job.id}`),1500);}} className="w-full gold py-5 rounded-2xl font-black uppercase text-sm shadow-xl shadow-amber-900/40 active:scale-95 transition-all flex items-center justify-center gap-3">
+                                <CreditCard className="w-5 h-5"/> Pay Securely with Card
+                            </button>
+                            <p className="text-[8px] text-slate-500 font-black uppercase mt-3">Or Zelle: (407) 952-4228 — Memo: {job.client_name}</p>
+                        </div>
                     </div>
+
+                    {/* Team Live Tracking */}
+                    {job.status === 'in_progress' && job.check_in_coords && (
+                        <div className="g overflow-hidden space-y-0">
+                            <div className="p-4 bg-green-600/10 border-b border-white/5 flex justify-between items-center">
+                                <p className="text-[9px] font-black text-green-400 uppercase tracking-widest flex items-center gap-2"><div className="dot-g"/> Team is On-Site</p>
+                                <span className="text-[8px] text-slate-500 font-black uppercase">Live Update</span>
+                            </div>
+                            <div className="h-40 w-full bg-slate-900">
+                                <iframe
+                                    src={`https://maps.google.com/maps?q=${job.check_in_coords.lat},${job.check_in_coords.lng}&t=&z=17&ie=UTF8&iwloc=&output=embed`}
+                                    className="w-full h-full border-0 grayscale invert contrast-125"
+                                    title="Team Location"
+                                />
+                            </div>
+                        </div>
+                    )}
                     {/* Quote approval */}
                     {!job.approval_signature?(
                         <div className="g p-6 border border-amber-500/30 space-y-4">
@@ -672,10 +697,19 @@ function App() {
                             <img src={job.final_signature} className="h-10 mx-auto opacity-50"/>
                         </div>
                     )}
-                    {/* QR code */}
-                    <div className="g p-5 flex items-center gap-4">
-                        <QRCode url={`${window.location.origin}${window.location.pathname}?mision=${job.id}`} size={80}/>
-                        <div><p className="text-[9px] font-black text-slate-500 uppercase mb-1">Your Portal QR</p><p className="text-[8px] text-slate-600 italic">Share or scan to access this mission anytime</p></div>
+                    {/* QR code & Quality Seal */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="g p-5 flex flex-col items-center justify-center text-center space-y-2">
+                            <QRCode url={`${window.location.origin}${window.location.pathname}?mision=${job.id}`} size={60}/>
+                            <p className="text-[7px] font-black text-slate-500 uppercase">Mission QR</p>
+                        </div>
+                        <div className="g p-5 flex flex-col items-center justify-center text-center space-y-2 border-2 border-amber-500/20">
+                            <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500"><ShieldCheck className="w-6 h-6"/></div>
+                            <div>
+                                <p className="text-[8px] font-black text-white uppercase">Elevore Gold</p>
+                                <p className="text-[6px] text-slate-500 font-black uppercase">Certified Quality</p>
+                            </div>
+                        </div>
                     </div>
                     {/* Review + referral */}
                     {/* Rating inmediato */}
