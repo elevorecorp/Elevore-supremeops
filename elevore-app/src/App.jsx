@@ -483,9 +483,11 @@ function App() {
             const nm = j.team_assigned.trim();
             const key = nm.toLowerCase();
             if(!teams[key])teams[key]={name:nm,jobs:0,gross:0,pay:0,bonus:0};
+            const collected = j.deposit_paid || 0;
+            const amount = (j.status === 'paid' && collected === 0) ? (j.total_price || 0) : collected;
             teams[key].jobs++;
-            teams[key].gross+=(j.deposit_paid||0);
-            teams[key].pay+=Math.round((j.deposit_paid||0)*STAFF_PAY);
+            teams[key].gross+=amount;
+            teams[key].pay+=Math.round(amount*STAFF_PAY);
             teams[key].bonus+=calcBonus(j);
         });
         return Object.values(teams);
