@@ -7,9 +7,9 @@ import {
     CreditCard, Globe, AlertTriangle, Users2, Image as ImageIcon,
     Star, Check
 } from 'lucide-react';
+import { fmt$, fmtDate, clientLevel, daysAgo } from '../lib/helpers';
 import { 
-    fmt$, fmtDate, clientLevel, daysAgo, INITIAL, MONTHLY_GOAL, 
-    QUICK_JOBS, RISK_P, ADDONS, CHECKLIST 
+    INITIAL, MONTHLY_GOAL, QUICK_JOBS, RISK_P, ADDONS, CHECKLIST 
 } from '../lib/constants';
 import PhotoDrive from '../components/ui/PhotoDrive';
 import BarChart from '../components/ui/BarChart';

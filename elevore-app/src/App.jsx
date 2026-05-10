@@ -5,7 +5,7 @@ import ClientPortal from './pages/ClientPortal';
 import AuthPage from './pages/AuthPage';
 import StaffDashboard from './pages/StaffDashboard';
 import AdminDashboard from './pages/AdminDashboard';
-import "./App.css";
+
 
 function AppRouter() {
     const { view, role, clientJobId, clientID } = useElevore();
