@@ -202,7 +202,7 @@ function IntelView() {
 }
 
 function AgendaView() {
-    const { filtered = [], searchQ, setSearchQ, filterSt, setFilterSt, realProfit, calcBonus, clientDNA, clientLevel, isPrivate, sendWA, printInvoice, setEditId, setState, setView, setDeployTab, refresh, log, showToast, t } = useElevore();
+    const { filtered = [], searchQ, setSearchQ, filterSt, setFilterSt, realProfit, calcBonus, clientDNA, isPrivate, sendWA, printInvoice, setEditId, setState, setView, setDeployTab, refresh, log, showToast, t } = useElevore();
     
     return (
         <div className="space-y-4 animate-in slide-in-from-bottom-10 pb-24">
