@@ -188,6 +188,7 @@ function App() {
     const [reportModal,setReportModal]=useState(null);
     const [reports,setReports]=useState([]);
     const [reportDesc,setReportDesc]=useState('');
+    const [staffList,setStaffList]=useState([]);
     const t=T[lang];
 
     const showToast=(msg,color='green')=>{ setToast({msg,color}); setTimeout(()=>setToast(null),3500); };
@@ -199,9 +200,11 @@ function App() {
         const{data:j}=await sb.from('elevore_missions').select('*').order('created_at',{ascending:false});
         const{data:c}=await sb.from('clients').select('*');
         const{data:r}=await sb.from('elevore_reports').select('*').order('created_at',{ascending:false});
+        const{data:s}=await sb.from('elevore_staff').select('*').order('name');
         if(j) setJobs(j);
         if(c) setClients(c);
         if(r) setReports(r);
+        if(s) setStaffList(s);
         setLoading(false);
         
     },[]);
@@ -218,6 +221,7 @@ function App() {
             .on('postgres_changes',{event:'*',schema:'public',table:'elevore_missions'},()=>refresh())
             .on('postgres_changes',{event:'*',schema:'public',table:'clients'},()=>refresh())
             .on('postgres_changes',{event:'*',schema:'public',table:'elevore_reports'},()=>refresh())
+            .on('postgres_changes',{event:'*',schema:'public',table:'elevore_staff'},()=>refresh())
             .subscribe();
         return ()=>sb.removeChannel(ch);
     },[view,refresh]);
@@ -329,11 +333,16 @@ function App() {
 
     // ── CHECK-IN / CHECK-OUT ─────────────────────────────────
     const recordTime=async(jobId,type)=>{
+        setLoading(true);
         const time=new Date().toISOString();
         const status=type==='check_in_time'?'in_progress':'completed';
         const{error}=await sb.from('elevore_missions').update({[type]:time,status}).eq('id',jobId);
-        if(!error){showToast(type==='check_in_time'?"▶ Checked in!":"⏹ Checked out!");log(type==='check_in_time'?`Check-in: job ${jobId}`:`Check-out: job ${jobId}`);refresh();}
-        else showToast("Error: "+error.message,'red');
+        setLoading(false);
+        if(!error){
+            showToast(type==='check_in_time'?"▶ Mission Started!":"⏹ Mission Completed!");
+            if(type==='check_out_time') setActiveStaff(null);
+            refresh();
+        } else showToast("Error: "+error.message,'red');
     };
 
     // ── NEURAL UPSELL ────────────────────────────────────────
@@ -934,24 +943,27 @@ function App() {
                                 <div><p className="text-[9px] font-black text-slate-500 uppercase mb-2">Description</p><textarea className="inp text-xs h-24 uppercase" placeholder="Explain the situation clearly..." value={reportDesc} onChange={e=>setReportDesc(e.target.value)}/></div>
                                 <div><p className="text-[9px] font-black text-slate-500 uppercase mb-2">Proof (Optional)</p><div className="g p-4 border-dashed border-white/10 text-center"><p className="text-[8px] text-slate-600 font-black italic">Click to upload photo</p></div></div>
                                 <button onClick={async()=>{
+                                    if(!reportDesc.trim()) return showToast("Please add a description",'red');
                                     setLoading(true);
-                                    const {error} = await sb.from('elevore_reports').insert({
-                                        type: reportModal.type,
-                                        description: reportDesc,
-                                        staff_name: pass,
-                                        job_id: reportModal.jobId || null,
-                                        status: 'open'
-                                    });
-                                    setLoading(false);
-                                    if(!error) {
+                                    try {
+                                        const {error} = await sb.from('elevore_reports').insert({
+                                            type: reportModal.type,
+                                            description: reportDesc,
+                                            staff_name: pass,
+                                            job_id: reportModal.jobId || null,
+                                            status: 'open'
+                                        });
+                                        if(error) throw error;
                                         showToast("Report submitted successfully! ✓");
                                         setReportModal(null);
                                         setReportDesc('');
                                         refresh();
-                                    } else {
-                                        showToast("Error sending report",'red');
+                                    } catch(e) {
+                                        showToast(e.message || "Error sending report",'red');
+                                    } finally {
+                                        setLoading(false);
                                     }
-                                }} className="w-full gold py-4 rounded-xl font-black uppercase active:scale-95">Send Report</button>
+                                }} className="w-full gold py-4 rounded-xl font-black uppercase active:scale-95 shadow-xl shadow-amber-900/20">Send Report</button>
                             </div>
                         </div>
                     </div>
@@ -1123,7 +1135,7 @@ function App() {
             <main className="max-w-xl mx-auto w-full p-4 space-y-5">
                 {/* NAV */}
                 <div className="flex gap-1 bg-black/40 p-1.5 rounded-2xl border border-white/5 shadow-xl overflow-x-auto no-sb">
-                    {[['brief','☀️','Brief'],['intel','📊','Intel'],['agenda','📋','Logs'],['clients','🧬','DNA'],['mrr','💳','MRR'],['payroll','💵','Pay'],['support','🚨','Support'],['map','📍','Map'],['deploy','⚡','New']].map(([v,e,l])=>(
+                    {[['brief','☀️','Brief'],['intel','📊','Intel'],['agenda','📋','Logs'],['clients','🧬','DNA'],['mrr','💳','MRR'],['payroll','💵','Pay'],['team','👥','Team'],['support','🚨','Support'],['map','📍','Map'],['deploy','⚡','New']].map(([v,e,l])=>(
                         <button key={v} onClick={()=>{if(v==='deploy'){setEditId(null);setState(INITIAL);setDeployTab('identity');}setView(v);}}
                             className={`flex-shrink-0 flex-1 py-2.5 rounded-xl text-[8px] uppercase font-black transition-all whitespace-nowrap px-2 ${view===v?(v==='deploy'?'bg-amber-500 text-black shadow-lg':'tab-on'):'text-slate-500'}`}>{e} {l}</button>
                     ))}
@@ -1503,6 +1515,61 @@ function App() {
                     </div>
                 )}
 
+                {/* ── TEAM ── */}
+                {view==='team'&&(
+                    <div className="space-y-4 animate-in fade-in pb-24">
+                        <div className="g p-5 border-t-4 border-blue-500">
+                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">👥 Team Roster</p>
+                            <p className="text-[8px] text-slate-600 font-black italic">Manage your employees and contractors</p>
+                        </div>
+                        
+                        {/* Add Staff Form */}
+                        <div className="g p-5 space-y-3 border border-white/5">
+                            <p className="text-[9px] font-black text-white uppercase mb-2">Add New Member</p>
+                            <div className="flex gap-2">
+                                <input type="text" id="staff_name" placeholder="Name" className="inp flex-1 text-[10px] uppercase"/>
+                                <input type="text" id="staff_phone" placeholder="Phone" className="inp flex-1 text-[10px] uppercase"/>
+                                <button onClick={async()=>{
+                                    const n = document.getElementById('staff_name').value;
+                                    const p = document.getElementById('staff_phone').value;
+                                    if(!n) return showToast("Name required",'red');
+                                    setLoading(true);
+                                    const {error} = await sb.from('elevore_staff').insert({name:n, phone:p});
+                                    setLoading(false);
+                                    if(!error){
+                                        showToast("Staff added! ✓");
+                                        document.getElementById('staff_name').value='';
+                                        document.getElementById('staff_phone').value='';
+                                        refresh();
+                                    }
+                                }} className="px-4 bg-blue-600 text-white rounded-xl font-black text-lg active:scale-95">+</button>
+                            </div>
+                        </div>
+
+                        {staffList.length===0&&<div className="g p-10 text-center text-slate-500 font-black italic uppercase">No staff members yet.</div>}
+                        <div className="grid gap-3">
+                            {staffList.map(s=>(
+                                <div key={s.id} className="g p-4 flex justify-between items-center border border-white/5">
+                                    <div>
+                                        <h3 className="text-sm font-black uppercase italic text-white">{s.name}</h3>
+                                        <p className="text-[8px] text-slate-500 font-black uppercase">{s.phone || 'No phone'}</p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button onClick={()=>window.open(`https://wa.me/${s.phone?.replace(/\D/g,'')}`)} className="p-2 bg-green-600/20 text-green-400 rounded-lg active:scale-95">💬</button>
+                                        <button onClick={async()=>{
+                                            if(confirm(`Remove ${s.name}?`)){
+                                                await sb.from('elevore_staff').delete().eq('id',s.id);
+                                                showToast("Member removed");
+                                                refresh();
+                                            }
+                                        }} className="p-2 bg-red-900/30 text-red-500 rounded-lg active:scale-95">🗑️</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* ── DEPLOY ── */}
                 {view==='deploy'&&(
                     <div className="space-y-5 animate-in zoom-in-95 pb-32">
@@ -1664,8 +1731,11 @@ function App() {
                                         </div>
                                     </div>
                                     <div className="space-y-3 border-t border-white/5 pt-3">
-                                        <select value={state.team} className="inp text-xs text-center" onChange={e=>setState({...state,team:e.target.value})}>
-                                            <option value="">Select Team...</option>
+                                        <select value={state.team} className="inp text-xs text-center font-black uppercase" onChange={e=>setState({...state,team:e.target.value})}>
+                                            <option value="">Select Team Member...</option>
+                                            {staffList.map(s=>(
+                                                <option key={s.id} value={s.name}>{s.name}</option>
+                                            ))}
                                             <option value="Team Alpha">Team Alpha</option>
                                             <option value="Team Beta">Team Beta</option>
                                             <option value="Jose Mario">Jose Mario (CEO)</option>
