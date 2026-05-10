@@ -1548,21 +1548,25 @@ function App() {
                                 <input type="text" id="staff_phone" placeholder="Phone" className="inp flex-1 text-[10px] uppercase"/>
                                 <input type="text" id="staff_pin" placeholder="PIN" className="inp w-20 text-[10px] text-center"/>
                                 <button onClick={async()=>{
-                                    const n = document.getElementById('staff_name').value;
-                                    const p = document.getElementById('staff_phone').value;
-                                    const pin = document.getElementById('staff_pin').value;
+                                    const n = document.getElementById('staff_name')?.value;
+                                    const p = document.getElementById('staff_phone')?.value;
+                                    const pin = document.getElementById('staff_pin')?.value;
                                     if(!n || !pin) return showToast("Name & PIN required",'red');
                                     setLoading(true);
-                                    const {error} = await sb.from('elevore_staff').insert({name:n, phone:p, pin:pin});
-                                    setLoading(false);
-                                    if(!error){
+                                    try {
+                                        const {error} = await sb.from('elevore_staff').insert({name:n, phone:p, pin:pin});
+                                        if(error) throw error;
                                         showToast("Staff added! ✓");
                                         document.getElementById('staff_name').value='';
                                         document.getElementById('staff_phone').value='';
                                         document.getElementById('staff_pin').value='';
                                         refresh();
+                                    } catch(e) {
+                                        showToast(e.message || "Check your Supabase table",'red');
+                                    } finally {
+                                        setLoading(false);
                                     }
-                                }} className="px-4 bg-blue-600 text-white rounded-xl font-black text-lg active:scale-95">+</button>
+                                }} className="px-4 bg-blue-600 text-white rounded-xl font-black text-lg active:scale-95 shadow-lg shadow-blue-900/40">+</button>
                             </div>
                         </div>
 
