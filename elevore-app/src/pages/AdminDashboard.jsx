@@ -5,7 +5,7 @@ import {
     Sun, BarChart2, ShieldCheck, Users, Zap, FileText, Edit3, Trash2, 
     MessageCircle, TrendingUp, DollarSign, MapPin, Package, ShieldAlert,
     CreditCard, Globe, AlertTriangle, Users2, Image as ImageIcon,
-    Star, Check, ArrowLeft, Play, Square
+    Star, Check, ArrowLeft, Play, Square, LogOut
 } from 'lucide-react';
 import { fmt$, fmtDate, clientLevel, daysAgo } from '../lib/helpers';
 import { 
@@ -91,7 +91,7 @@ export default function AdminDashboard() {
 
 function MorningBriefView() {
     const { jobs, todayStr, finance, sendWA, setView, isPrivate, t } = useElevore();
-    const todayJobs = jobs.filter(j => j.scheduled_date === todayStr);
+    const todayJobs = (jobs || []).filter(j => j.scheduled_date === todayStr);
     
     return (
         <div className="space-y-6 animate-in fade-in duration-700 pb-24">
@@ -131,7 +131,8 @@ function MorningBriefView() {
 
 function IntelView() {
     const { finance, sendWA, isPrivate, t } = useElevore();
-    const { churn, coldLeads, retDue, pendSig, projection, gross, progress } = finance;
+    if (!finance) return null;
+    const { churn = [], coldLeads = [], retDue = [], projection = 0, progress = 0 } = finance;
 
     return (
         <div className="space-y-6 animate-in zoom-in-95 pb-24">
@@ -140,7 +141,6 @@ function IntelView() {
                 <h2 className="text-3xl font-black italic text-white uppercase leading-none">Revenue <span className="text-green-500">Radar</span></h2>
             </div>
 
-            {/* Projection Card */}
             <div className="g p-6 border-t-4 border-green-500 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-10"><TrendingUp className="w-20 h-20 text-white" /></div>
                 <p className="text-[10px] font-black text-slate-500 uppercase mb-1">Monthly Projection</p>
@@ -149,7 +149,6 @@ function IntelView() {
                 <p className="text-[8px] text-slate-500 font-black uppercase mt-2">{Math.round(progress)}% of Monthly Goal reached</p>
             </div>
 
-            {/* CHURN ALERTS */}
             <div className="space-y-3">
                 <div className="flex justify-between items-center px-1">
                     <p className="text-[10px] font-black text-red-500 uppercase tracking-widest flex items-center gap-2"><ShieldAlert className="w-3 h-3"/> Churn Risk (Inactive 45+ days)</p>
@@ -167,7 +166,6 @@ function IntelView() {
                 ))}
             </div>
 
-            {/* COLD LEADS */}
             <div className="space-y-3">
                 <div className="flex justify-between items-center px-1">
                     <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest flex items-center gap-2"><Zap className="w-3 h-3"/> Cold Leads (Unsigned 48h+)</p>
@@ -184,7 +182,6 @@ function IntelView() {
                 ))}
             </div>
 
-            {/* RETENTION DUE */}
             <div className="space-y-3">
                 <div className="flex justify-between items-center px-1">
                     <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest flex items-center gap-2"><Package className="w-3 h-3"/> Retention Due (Coming Soon)</p>
@@ -205,7 +202,7 @@ function IntelView() {
 }
 
 function AgendaView() {
-    const { filtered, searchQ, setSearchQ, filterSt, setFilterSt, realProfit, calcBonus, clientDNA, clientLevel, isPrivate, sendWA, printInvoice, setEditId, setState, setView, setDeployTab, refresh, log, showToast, t } = useElevore();
+    const { filtered = [], searchQ, setSearchQ, filterSt, setFilterSt, realProfit, calcBonus, clientDNA, clientLevel, isPrivate, sendWA, printInvoice, setEditId, setState, setView, setDeployTab, refresh, log, showToast, t } = useElevore();
     
     return (
         <div className="space-y-4 animate-in slide-in-from-bottom-10 pb-24">
@@ -278,9 +275,9 @@ function DeployView() {
                 {deployTab === 'identity' && (
                     <div className="space-y-3 animate-in fade-in">
                         <h3 className="text-[10px] uppercase text-amber-500 font-black italic tracking-widest border-b border-white/5 pb-2">Identity Matrix</h3>
-                        <input type="text" placeholder="CLIENT FULL NAME" value={state.name} className="inp uppercase" onChange={e => onNameChange(e.target.value)} />
-                        <input type="text" placeholder="PHONE NUMBER" value={state.phone} className="inp" onChange={e => setState({ ...state, phone: e.target.value })} />
-                        <input type="text" placeholder="FULL STREET ADDRESS" value={state.address} className="inp uppercase text-xs" onChange={e => setState({ ...state, address: e.target.value })} />
+                        <input type="text" placeholder="CLIENT FULL NAME" value={state.name || ''} className="inp uppercase" onChange={e => onNameChange(e.target.value)} />
+                        <input type="text" placeholder="PHONE NUMBER" value={state.phone || ''} className="inp" onChange={e => setState({ ...state, phone: e.target.value })} />
+                        <input type="text" placeholder="FULL STREET ADDRESS" value={state.address || ''} className="inp uppercase text-xs" onChange={e => setState({ ...state, address: e.target.value })} />
                         <div className="grid grid-cols-3 gap-2">
                             {['lead', 'scheduled', 'paid'].map(s => (
                                 <button key={s} onClick={() => setState({ ...state, status: s })} className={`py-3 rounded-xl text-[8px] uppercase font-black border-2 active:scale-95 ${state.status === s ? 'bg-amber-500 text-black border-amber-500 shadow-lg' : 'bg-white/5 border-white/5 text-slate-500'}`}>{s}</button>
@@ -292,8 +289,8 @@ function DeployView() {
                     <div className="space-y-3 animate-in fade-in">
                         <h3 className="text-[10px] uppercase text-amber-500 font-black italic tracking-widest border-b border-white/5 pb-2">Client Pulse (VIP)</h3>
                         <div className="grid grid-cols-2 gap-2">
-                            <input type="text" placeholder="PETS (e.g. Dog Toby)" value={state.pets || ''} className="inp text-[10px]" onChange={e => setState({ ...state, pets: e.target.value })} />
-                            <input type="text" placeholder="ACCESS CODE" value={state.access_code || ''} className="inp text-[10px]" onChange={e => setState({ ...state, access_code: e.target.value })} />
+                            <input type="text" placeholder="PETS" value={state.pets || ''} className="inp text-[10px]" onChange={e => setState({ ...state, pets: e.target.value })} />
+                            <input type="text" placeholder="CODE" value={state.access_code || ''} className="inp text-[10px]" onChange={e => setState({ ...state, access_code: e.target.value })} />
                         </div>
                         <textarea placeholder="SPECIAL INSTRUCTIONS" value={state.preferences || ''} className="inp h-24 text-[10px] resize-none" onChange={e => setState({ ...state, preferences: e.target.value })} />
                     </div>
@@ -315,7 +312,7 @@ function DeployView() {
 }
 
 function SupportView() {
-    const { reports, refresh, showToast } = useElevore();
+    const { reports = [], refresh, showToast } = useElevore();
     const solveReport = async (id) => {
         const { error } = await sb.from('elevore_reports').update({ status: 'closed' }).eq('id', id);
         if (!error) { showToast("Report solved! ✓"); refresh(); }
@@ -326,7 +323,7 @@ function SupportView() {
                 <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Support & Logistics</p>
                 <h2 className="text-3xl font-black italic text-white uppercase leading-none">Command <span className="text-amber-500">Center</span></h2>
             </div>
-            {reports.length === 0 && <p className="text-center py-10 text-slate-600 font-black italic uppercase text-[10px]">No active reports or requests.</p>}
+            {reports.length === 0 && <p className="text-center py-10 text-slate-600 font-black italic uppercase text-[10px]">No active reports.</p>}
             <div className="space-y-3">
                 {reports.filter(r => r.status === 'open').map(rep => (
                     <div key={rep.id} className={`g p-5 border-l-4 ${rep.type === 'incident' ? 'border-red-600' : 'border-amber-500'} flex justify-between items-center`}>
