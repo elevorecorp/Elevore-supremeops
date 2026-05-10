@@ -864,7 +864,7 @@ function App() {
                                 <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest">{staffName || 'GENERIC OPS'}</p>
                             </div>
                         </div>
-                        <button onClick={()=>sb.auth.signOut()} className="p-3 bg-white/5 border border-white/10 rounded-2xl text-slate-500 hover:text-white transition-all active:scale-95"><LogOut className="w-4 h-4" /></button>
+                        <button onClick={()=>{ setView('auth'); setRole('admin'); setPass(''); setStaffName(''); setActiveStaff(null); }} className="p-3 bg-white/5 border border-white/10 rounded-2xl text-slate-500 hover:text-white transition-all active:scale-95"><LogOut className="w-4 h-4" /></button>
                     </div>
 
                     {/* STAFF TABS */}
@@ -1169,7 +1169,7 @@ function App() {
                 <div className="flex gap-1.5">
                     <button onClick={()=>setQuickMode(true)} className="gold px-3 py-2 rounded-xl font-black uppercase text-[8px] active:scale-95">⚡ Quick</button>
                     <button onClick={()=>setIsPrivate(p=>!p)} className="p-2.5 bg-slate-900 rounded-xl text-slate-500 hover:text-amber-500 transition-all"><i data-lucide={isPrivate?'eye-off':'eye'} className="w-4 h-4"></i></button>
-                    <button onClick={()=>setView('auth')} className="p-2.5 bg-slate-900 rounded-xl text-slate-500 hover:text-white transition-all"><LogOut className="w-4 h-4" /></button>
+                    <button onClick={()=>{ setView('auth'); setRole('admin'); setPass(''); setStaffName(''); }} className="p-2.5 bg-slate-900 rounded-xl text-slate-500 hover:text-white transition-all"><LogOut className="w-4 h-4" /></button>
                 </div>
             </nav>
 
