@@ -75,6 +75,8 @@ export function ElevoreProvider({ children }) {
     const [reportDesc, setReportDesc] = useState('');
     const [staffList, setStaffList] = useState([]);
     const [staffName, setStaffName] = useState('');
+    const [chatJob, setChatJob] = useState(null);
+    const [chatLog, setChatLog] = useState([]);
 
     const t = T[lang];
 
@@ -448,7 +450,7 @@ export function ElevoreProvider({ children }) {
         recordTime, sendUpsell, calcBonus, realProfit,
         finance, clientDNA, todayStr, filtered,
         mrr, payrollSheet, sendWA, printInvoice, exportCSV,
-        uploadPhoto
+        uploadPhoto, chatJob, setChatJob, chatLog, setChatLog
     };
 
     return (

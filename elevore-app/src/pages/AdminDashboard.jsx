@@ -9,11 +9,71 @@ import {
 } from 'lucide-react';
 import { fmt$, fmtDate, clientLevel, daysAgo } from '../lib/helpers';
 import { 
-    INITIAL, MONTHLY_GOAL, QUICK_JOBS, RISK_P, ADDONS, CHECKLIST 
+    INITIAL, MONTHLY_GOAL, QUICK_JOBS, RISK_P, ADDONS, CHECKLIST, GOOGLE_LINK 
 } from '../lib/constants';
 import PhotoDrive from '../components/ui/PhotoDrive';
 import BarChart from '../components/ui/BarChart';
 import QRCode from '../components/ui/QRCode';
+
+function ChatModal() {
+    const { chatJob, setChatJob, chatLog, setChatLog, log } = useElevore();
+    const [chatMsg, setChatMsg] = React.useState('');
+
+    const send = () => {
+        if (!chatMsg.trim()) return;
+        const p = chatJob.client_phone?.replace(/\D/g, '') || '';
+        const ph = p.length === 10 ? '1' + p : p;
+        window.open(`https://wa.me/${ph}?text=${encodeURIComponent(chatMsg)}`, '_blank');
+        setChatLog(l => [...l, { from: 'admin', m: chatMsg, time: new Date().toLocaleTimeString() }]);
+        setChatMsg('');
+        log(`Chat → ${chatJob.client_name}`);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/90 z-[400] flex items-end p-4 animate-in fade-in" onClick={e => e.target === e.currentTarget && setChatJob(null)}>
+            <div className="g p-6 w-full max-w-md space-y-4 border-t-4 border-green-500 mx-auto animate-in slide-in-from-bottom-10 shadow-[0_0_50px_rgba(34,197,94,0.15)]">
+                <div className="flex justify-between items-center">
+                    <p className="text-[10px] font-black text-green-500 uppercase tracking-widest flex items-center gap-2"><MessageCircle className="w-4 h-4"/> {chatJob?.client_name}</p>
+                    <button onClick={() => setChatJob(null)} className="active:scale-95 text-slate-500 hover:text-white transition-all"><span className="text-[10px] uppercase font-black tracking-widest">Close X</span></button>
+                </div>
+                <div className="h-32 overflow-y-auto space-y-2 no-sb">
+                    {chatLog.length === 0 && <p className="text-[9px] text-slate-600 italic text-center py-4 uppercase font-black">No messages yet.</p>}
+                    {chatLog.map((m, i) => (
+                        <div key={i} className="p-3 rounded-xl text-[10px] font-black bg-green-900/30 text-green-400 ml-8 border border-green-500/20">
+                            <p className="leading-snug">{m.m}</p>
+                            <p className="text-[7px] text-slate-500 mt-1 uppercase text-right">{m.time}</p>
+                        </div>
+                    ))}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                    {[
+                        ['✅ Confirm', 'confirm'],
+                        ['🔔 Remind', 'reminder'],
+                        ['⭐ Review', 'review'],
+                        ['📋 Quote', 'quote']
+                    ].map(([l, type]) => (
+                        <button key={type} onClick={() => {
+                            const msgs = {
+                                confirm: `Hi ${chatJob.client_name}! ✨ Elevore confirming service ${fmtDate(chatJob.scheduled_date)}.`,
+                                reminder: `Hi ${chatJob.client_name}! 🔔 Service ${fmtDate(chatJob.scheduled_date)}.`,
+                                review: `Hi ${chatJob.client_name}! 🌟 Review: ${GOOGLE_LINK}`,
+                                quote: `Hi ${chatJob.client_name}! Portal: ${window.location.origin}${window.location.pathname}?mision=${chatJob.id}`
+                            };
+                            setChatMsg(msgs[type]);
+                        }} className="py-2 bg-white/5 text-slate-400 rounded-xl text-[8px] font-black uppercase active:scale-95 border border-white/5 hover:bg-white/10 transition-all">{l}</button>
+                    ))}
+                </div>
+                <div className="flex gap-2">
+                    <textarea value={chatMsg} onChange={e => setChatMsg(e.target.value)} placeholder="Type AI message..." className="inp text-sm resize-none h-16 flex-1 bg-[#0d1117]" />
+                    <button onClick={send} className="bg-green-600 text-white px-5 rounded-xl font-black active:scale-95 hover:bg-green-500 transition-all flex flex-col items-center justify-center gap-1 shadow-[0_0_20px_rgba(34,197,94,0.3)]">
+                        <Zap className="w-5 h-5" />
+                        <span className="text-[7px] uppercase tracking-widest">Send</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 export default function AdminDashboard() {
     const { 
@@ -23,12 +83,13 @@ export default function AdminDashboard() {
         state, setState, activityLog, log, refresh, onNameChange, pricing, deploy, 
         quickDeploy, realProfit, finance, clientDNA, todayStr, filtered, 
         mrr, payrollSheet, sendWA, printInvoice, exportCSV, staffList, reports,
-        lang, setLang, t
+        lang, setLang, t, chatJob, setChatJob, chatLog, setChatLog
     } = useElevore();
 
     return (
         <div className="min-h-screen bg-[#020203] text-white selection:bg-amber-500 selection:text-black">
             {toast && <div className={`toast fixed top-5 left-1/2 -translate-x-1/2 z-[500] px-6 py-3 rounded-2xl font-black uppercase text-sm shadow-2xl ${toast.color === 'red' ? 'bg-red-600' : 'bg-green-600'} text-white border border-white/10 animate-in slide-in-from-top-full duration-300`}>{toast.msg}</div>}
+            {chatJob && <ChatModal />}
             
             {loading && (
                 <div className="fixed inset-0 bg-black/60 z-[2000] flex items-center justify-center backdrop-blur-md">
@@ -112,6 +173,23 @@ function MorningBriefView() {
                 </div>
             </div>
 
+            {/* NEW: Fleet Status Widget */}
+            <div className="g p-4 flex justify-between items-center border border-white/5 bg-black/20 shadow-lg">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
+                        <Zap className="w-5 h-5 text-amber-500 animate-pulse" />
+                    </div>
+                    <div>
+                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Fleet Status</p>
+                        <p className="text-sm font-black text-white uppercase tracking-wider">Optimal <span className="text-green-500 text-[8px] ml-1 align-middle">● LIVE</span></p>
+                    </div>
+                </div>
+                <div className="text-right">
+                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Active Units</p>
+                    <p className="text-2xl font-black italic text-white leading-none">{todayJobs.filter(j => j.status === 'in_progress').length}</p>
+                </div>
+            </div>
+
             <div className="space-y-3">
                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Active Queue</p>
                 {todayJobs.map(j => (
@@ -184,7 +262,7 @@ function IntelView() {
 
             <div className="space-y-3">
                 <div className="flex justify-between items-center px-1">
-                    <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest flex items-center gap-2"><Package className="w-3 h-3"/> Retention Due (Coming Soon)</p>
+                    <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest flex items-center gap-2"><Package className="w-3 h-3"/> Retention Due</p>
                     <span className="text-[10px] font-black text-white bg-blue-500/20 px-2 py-0.5 rounded-full">{retDue.length}</span>
                 </div>
                 {retDue.map(j => (
@@ -202,7 +280,7 @@ function IntelView() {
 }
 
 function AgendaView() {
-    const { filtered = [], searchQ, setSearchQ, filterSt, setFilterSt, realProfit, calcBonus, clientDNA, isPrivate, sendWA, printInvoice, setEditId, setState, setView, setDeployTab, refresh, log, showToast, t } = useElevore();
+    const { filtered = [], searchQ, setSearchQ, filterSt, setFilterSt, realProfit, calcBonus, clientDNA, isPrivate, sendWA, printInvoice, setEditId, setState, setView, setDeployTab, refresh, log, showToast, t, setChatJob } = useElevore();
     
     return (
         <div className="space-y-4 animate-in slide-in-from-bottom-10 pb-24">
@@ -248,6 +326,7 @@ function AgendaView() {
                                 <p className="text-4xl font-black italic tracking-tighter text-white leading-none">{fmt$(bal)}</p>
                             </div>
                             <div className="flex gap-1.5">
+                                <button onClick={() => setChatJob(job)} className="p-2.5 bg-blue-900/30 text-blue-400 rounded-xl hover:bg-blue-600 hover:text-white transition-all"><MessageCircle className="w-4 h-4" /></button>
                                 <button onClick={() => printInvoice(job)} className="p-2.5 bg-slate-800 text-amber-500 rounded-xl hover:scale-110 transition-all"><FileText className="w-4 h-4" /></button>
                                 <button onClick={() => { setEditId(job.id); setState({ ...job.specs, totalPrice: job.total_price }); setView('deploy'); setDeployTab('identity'); }} className="p-2.5 bg-slate-800 text-white rounded-xl hover:bg-blue-600 transition-all"><Edit3 className="w-4 h-4" /></button>
                                 <button onClick={() => { if (confirm("Archive?")) sb.from('elevore_missions').delete().eq('id', job.id).then(() => { showToast("Archived ✓"); log(`Archived: ${job.client_name}`); refresh(); }); }} className="p-2.5 bg-red-900/30 text-red-500 rounded-xl hover:bg-red-600 transition-all"><Trash2 className="w-4 h-4" /></button>
@@ -295,7 +374,38 @@ function DeployView() {
                         <textarea placeholder="SPECIAL INSTRUCTIONS" value={state.preferences || ''} className="inp h-24 text-[10px] resize-none" onChange={e => setState({ ...state, preferences: e.target.value })} />
                     </div>
                 )}
-                <p className="text-center text-[7px] text-slate-600 font-black uppercase">Configure mission parameters</p>
+                {deployTab === 'add-ons' && (
+                    <div className="space-y-3 animate-in fade-in">
+                        <h3 className="text-[10px] uppercase text-amber-500 font-black italic tracking-widest border-b border-white/5 pb-2">Extra Services</h3>
+                        <div className="grid grid-cols-2 gap-3">
+                            {ADDONS.map(a => (
+                                <button key={a.id} onClick={() => setState({ ...state, [a.id]: !state[a.id] })} className={`p-3 rounded-xl text-[10px] font-black uppercase text-left transition-all border-2 ${state[a.id] ? 'bg-amber-500/20 border-amber-500 text-amber-500' : 'bg-white/5 border-white/5 text-slate-400'}`}>
+                                    <div className="flex justify-between items-center">
+                                        <span>{a.label}</span>
+                                        {state[a.id] && <Check className="w-3 h-3"/>}
+                                    </div>
+                                    <p className="text-[8px] mt-1 opacity-70">+${a.p}</p>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+                {deployTab === 'money' && (
+                    <div className="space-y-3 animate-in fade-in">
+                        <h3 className="text-[10px] uppercase text-amber-500 font-black italic tracking-widest border-b border-white/5 pb-2">Financials</h3>
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <label className="text-[8px] font-black text-slate-500 uppercase ml-2">Discount %</label>
+                                <input type="number" placeholder="Discount %" value={state.discount || ''} className="inp mt-1" onChange={e => setState({ ...state, discount: Number(e.target.value) })} />
+                            </div>
+                            <div>
+                                <label className="text-[8px] font-black text-slate-500 uppercase ml-2">Deposit Paid $</label>
+                                <input type="number" placeholder="Deposit" value={state.deposit || ''} className="inp mt-1" onChange={e => setState({ ...state, deposit: Number(e.target.value) })} />
+                            </div>
+                        </div>
+                    </div>
+                )}
+                <p className="text-center text-[7px] text-slate-600 font-black uppercase pt-2">Configure mission parameters</p>
             </div>
 
             <div className="bg-white text-black p-8 rounded-[3rem] text-center shadow-2xl relative overflow-hidden active:scale-95 transition-all">
@@ -343,7 +453,7 @@ function SupportView() {
 }
 
 function ClientsView() {
-    const { clients, clientDNA, clientLevel, sendWA, isPrivate } = useElevore();
+    const { clients, clientDNA, sendWA, isPrivate } = useElevore();
     return (
         <div className="space-y-4 animate-in fade-in duration-500 pb-24">
             <div className="text-center py-4">
@@ -422,7 +532,65 @@ function PayrollView() {
     );
 }
 
-function MapView() { return <div className="g p-10 text-center text-slate-500 font-black italic uppercase">Strike Map (GPS) <br/> <span className="text-[8px] text-amber-500">Live coordinates connecting...</span></div>; }
+function MapView() {
+    const { jobs, todayStr, sendWA } = useElevore();
+    const activeJobs = jobs.filter(j => j.scheduled_date === todayStr || j.status === 'in_progress');
+
+    return (
+        <div className="space-y-6 animate-in zoom-in-95 pb-24">
+            <div className="text-center py-4">
+                <p className="text-[10px] font-black text-cyan-500 uppercase tracking-widest">Global Positioning</p>
+                <h2 className="text-3xl font-black italic text-white uppercase leading-none">Strike <span className="text-cyan-500">Map</span></h2>
+            </div>
+            
+            {/* RADAR ANIMATION */}
+            <div className="flex justify-center my-6">
+                <div className="relative w-48 h-48 rounded-full border border-cyan-500/30 bg-cyan-900/10 flex items-center justify-center overflow-hidden shadow-[0_0_50px_rgba(6,182,212,0.15)]">
+                    <div className="absolute w-full h-full border-2 border-cyan-500/20 rounded-full animate-ping" style={{ animationDuration: '3s' }}></div>
+                    <div className="absolute w-3/4 h-3/4 border border-cyan-500/20 rounded-full"></div>
+                    <div className="absolute w-1/2 h-1/2 border border-cyan-500/20 rounded-full"></div>
+                    <div className="absolute top-1/2 left-1/2 w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-500 to-transparent origin-left animate-spin" style={{ animationDuration: '4s' }}></div>
+                    <MapPin className="text-cyan-400 w-8 h-8 z-10" />
+                    {activeJobs.slice(0, 4).map((_, i) => (
+                        <div key={i} className="absolute w-2 h-2 bg-amber-500 rounded-full animate-pulse shadow-[0_0_10px_#f59e0b]" style={{ top: `${20 + i*15}%`, left: `${30 + i*20}%` }}></div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="space-y-3">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Active Coordinates ({activeJobs.length})</p>
+                {activeJobs.length === 0 && <p className="text-center py-6 text-slate-600 font-black italic uppercase text-[10px]">No active signals detected today.</p>}
+                
+                {activeJobs.map(job => (
+                    <div key={job.id} className="g p-5 border-l-4 border-cyan-500 flex flex-col gap-3 relative overflow-hidden shadow-xl">
+                        <div className="absolute -right-4 -top-4 w-16 h-16 bg-cyan-500/10 rounded-full blur-xl"></div>
+                        <div className="flex justify-between items-start">
+                            <div className="flex-1 min-w-0 pr-2">
+                                <h3 className="text-sm font-black text-white uppercase truncate">{job.client_name}</h3>
+                                <p className="text-[8px] text-cyan-400 uppercase font-black">Team: {job.team_assigned || 'UNASSIGNED'}</p>
+                            </div>
+                            <span className={`text-[6px] font-black px-2 py-0.5 rounded-full uppercase flex-shrink-0 ${job.status === 'in_progress' ? 'bg-green-600 text-white animate-pulse' : 'bg-cyan-900 text-cyan-400'}`}>{job.status.replace('_', ' ')}</span>
+                        </div>
+                        
+                        <div className="bg-black/40 p-2.5 rounded-xl border border-white/5">
+                            <p className="text-[9px] text-slate-400 italic truncate">{job.address}</p>
+                            {job.check_in_coords && (
+                                <p className="text-[7px] text-green-500 font-black uppercase mt-1 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> GPS: {job.check_in_coords.lat.toFixed(4)}, {job.check_in_coords.lng.toFixed(4)}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="flex gap-2">
+                            <button onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.address)}`)} className="flex-1 py-2 bg-cyan-600/20 text-cyan-400 rounded-xl text-[9px] font-black uppercase active:scale-95 flex items-center justify-center gap-1"><MapPin className="w-3 h-3"/> Route</button>
+                            <button onClick={() => sendWA(job, 'arrival')} className="flex-1 py-2 bg-amber-500/20 text-amber-500 rounded-xl text-[9px] font-black uppercase active:scale-95 flex items-center justify-center gap-1"><Zap className="w-3 h-3"/> Dispatch</button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
 
 function DriveView() {
     const { jobs } = useElevore();
@@ -446,25 +614,54 @@ function DriveView() {
 }
 
 function TeamView() {
-    const { staffList, showToast } = useElevore();
+    const { staffList, showToast, refresh } = useElevore();
+    const [newStaff, setNewStaff] = React.useState({ name: '', pin: '' });
+
+    const addStaff = async () => {
+        if (!newStaff.name || !newStaff.pin) return showToast("Fill Name and PIN", "red");
+        const { error } = await sb.from('elevore_staff').insert([{ name: newStaff.name, pin: newStaff.pin }]);
+        if (error) {
+            showToast("Error adding staff", "red");
+        } else {
+            showToast("Staff Added!");
+            setNewStaff({ name: '', pin: '' });
+            refresh();
+        }
+    };
+
     return (
-        <div className="space-y-4 pb-24">
+        <div className="space-y-4 pb-24 animate-in fade-in">
             <div className="text-center py-4">
                 <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Human Capital</p>
                 <h2 className="text-3xl font-black italic text-white uppercase leading-none">Elite <span className="text-amber-500">Staff</span></h2>
             </div>
-            {staffList.map(s => (
-                <div key={s.id} className="g p-5 flex justify-between items-center border-l-4 border-amber-500">
-                    <div>
-                        <h3 className="text-sm font-black text-white uppercase">{s.name}</h3>
-                        <p className="text-[8px] text-slate-500 font-black uppercase">Access PIN: {s.pin}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="dot-g"></span>
-                        <p className="text-[8px] text-green-500 font-black uppercase">Active</p>
-                    </div>
+            
+            <div className="g p-5 border border-amber-500/30 bg-amber-500/5 mb-6">
+                <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-3">Add New Member</p>
+                <div className="flex gap-2">
+                    <input type="text" placeholder="Name" value={newStaff.name} onChange={e => setNewStaff({ ...newStaff, name: e.target.value })} className="inp flex-1" />
+                    <input type="text" placeholder="PIN" value={newStaff.pin} onChange={e => setNewStaff({ ...newStaff, pin: e.target.value })} className="inp w-20 text-center" />
+                    <button onClick={addStaff} className="bg-amber-500 text-black font-black uppercase px-4 rounded-xl active:scale-95">Add</button>
                 </div>
-            ))}
+            </div>
+
+            <div className="space-y-2">
+                {staffList.map(s => (
+                    <div key={s.id} className="g p-5 flex justify-between items-center border-l-4 border-amber-500">
+                        <div>
+                            <h3 className="text-sm font-black text-white uppercase">{s.name}</h3>
+                            <p className="text-[8px] text-slate-500 font-black uppercase">Access PIN: {s.pin}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                            <p className="text-[8px] text-green-500 font-black uppercase">Active</p>
+                            <button onClick={() => {
+                                if(confirm("Remove staff?")) sb.from('elevore_staff').delete().eq('id', s.id).then(() => { showToast("Removed"); refresh(); });
+                            }} className="ml-3 p-2 bg-red-900/30 text-red-500 rounded-lg hover:bg-red-600 transition-all"><Trash2 className="w-3 h-3"/></button>
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }
